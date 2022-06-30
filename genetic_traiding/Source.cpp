@@ -8,22 +8,26 @@
 #include"LGenetic.h"
 #include"NeuralN.hpp"
 
+bool timestep = 24; //тут 24(каждый час) или 1(каждый день)
 
 bool show = false;
-const int input_size = 7*24;
+const int input_size = 7 * timestep;
 const int output_size = 3;
 const NeuralN MyNet_static = NeuralN(
 	{ input_size, 25, 15, 5, output_size }, 
 	{ NeuralN::RELU, NeuralN::RELU, NeuralN::RELU, NeuralN::SIGMOID }
 );
 
-int dataset_size = 27000;
-double train_persent = 0.8; 
-int train_size = (int)(dataset_size * train_persent);
-int test_size = dataset_size - train_size;
 
-std::vector<double> cost_train(train_size);
-std::vector<double> cost_test(test_size);
+double commission_persent = 0.0004;
+double train_persent = 0.8;
+
+int dataset_size;
+int train_size;
+int test_size;
+
+std::vector<double> cost_train;
+std::vector<double> cost_test;
 
 bool TEST = false;
 
@@ -58,6 +62,7 @@ void nothing(int ignor_days) {
 void buy(double& money, const double& cost, std::vector<int>& buy_days, const int& end, int& amount_stocks) {
 	if (money > cost) {
 		money -= cost;
+		money -= cost * commission_persent; //commission
 		amount_stocks += 1;
 		buy_days.push_back(end);
 	}
@@ -65,6 +70,7 @@ void buy(double& money, const double& cost, std::vector<int>& buy_days, const in
 void sell(int& amount_stocks, double& money, const double& cost, const double& active_money, const int window, std::vector<int>& sell_days, int& hangry_days, const int end, double& storage, std::vector<int>& storage_days, int& days_without_storage) {
 	if (amount_stocks >= 1) {
 		money += cost;
+		money -= cost * commission_persent; //commission
 		if (money > active_money) {
 			storage += money - active_money;
 			money = active_money;
@@ -133,7 +139,7 @@ double loss(std::vector<double>& x, std::string file_validation) {
 	else days_without_storage = std::max(days_without_storage, test_size - storage_days[storage_days.size() - 1]);
 
 	if (show) {
-		std::cout << "[";
+		/*std::cout << "[";
 		for (auto i : buy_days) {
 			std::cout << i << ", ";
 		}
@@ -143,17 +149,20 @@ double loss(std::vector<double>& x, std::string file_validation) {
 		for (auto i : sell_days) {
 			std::cout << i << ", ";
 		}
-		std::cout << "]\n";
+		std::cout << "]\n";*/
 
-		std::cout << "hangry_days " << hangry_days << "\n";
-		std::cout << "days_without_storage " << days_without_storage << "\n";
-		std::cout << "amount_stocks " << amount_stocks << "\n";
-		std::cout << "money " << money << "\n";
-		std::cout << "storage " << storage << "\n";
+
+		std::cout << "\n\nTest dataset with amount of days " << test_size / timestep <<  " (" << test_size / timestep / 365 <<" years)\n";
+		std::cout << "\thangry_days " << hangry_days / timestep << "\n";
+		std::cout << "\tdays_without_storage " << days_without_storage / timestep << "\n";
+		std::cout << "\tamount_stocks " << amount_stocks << " [price " << *(cost_test.end() - 1) << "] => " << *(cost_test.end() - 1) * amount_stocks << "\n";
+		std::cout << "\tmoney " << money << "\n";
+		std::cout << "\tstorage " << storage << "\n";
+		std::cout << "\tsum: " << *(cost_test.end() - 1) * amount_stocks + storage + money << "\n\n";
 		
 	}
 
-	int money_in_stockes = amount_stocks * (*(cost_test.end() - 1));
+	double money_in_stockes = amount_stocks * (*(cost_test.end() - 1));
 	std::cout << "stocks: " << money_in_stockes << " ";
 	std::cout << "storage: " << storage << " ";
 	std::cout << "money: " << money << " ";
@@ -209,7 +218,7 @@ double trade_action(std::vector<double>& x) {
 	
 
 	if (show) {
-		std::cout << "buy = [";
+		/*std::cout << "buy = [";
 		for (auto i : buy_days) {
 			std::cout << i << ", ";
 		}
@@ -219,20 +228,21 @@ double trade_action(std::vector<double>& x) {
 		for (auto i : sell_days) {
 			std::cout << i << ", ";
 		}
-		std::cout << "]\n";
-
-		std::cout << "hangry_days " << hangry_days << "\n";
-		std::cout << "days_without_storage " << days_without_storage << "\n";
-		std::cout << "amount_stocks " << amount_stocks << "\n";
-		std::cout << "money " << money << "\n";
-		std::cout << "storage " << storage << "\n";
+		std::cout << "]\n";*/
+		std::cout << "\n\nTrain dataset with amount of days " << train_size / timestep << " (" << train_size / timestep / 365 << " years)\n";
+		std::cout << "\thangry_days " << hangry_days / timestep << "\n";
+		std::cout << "\tdays_without_storage " << days_without_storage / timestep << "\n";
+		std::cout << "\tamount_stocks " << amount_stocks << " [price " << *(cost_train.end() - 1) << "] => " << *(cost_train.end() - 1) * amount_stocks << "\n";
+		std::cout << "\tmoney " << money << "\n";
+		std::cout << "\tstorage " << storage << "\n";
+		std::cout << "\tsum: " << *(cost_train.end() - 1) * amount_stocks + storage + money << "\n";
 	}
 	return -storage*10 - money + hangry_days*100 + amount_stocks*10;
 }
 
 void do_it() {
 	int gene_length = MyNet_static.getParamsNumber();
-	int pop_size = 128;
+	int pop_size = 32;
 	LGenetic Model
 	(
 		pop_size,
@@ -243,7 +253,6 @@ void do_it() {
 	Model.rand_population_normal();
 	Model.set_crossover(LGenetic::SPBX);
 	Model.set_mutation(LGenetic::AM);
-	Model.file_validation = "testSBER.txt";
 	Model.set_loss(loss);
 	Model.learn(1000);
 
@@ -256,7 +265,20 @@ void do_it() {
 
 int main() {
 	clock_t read = clock();
-	std::string file_name = "datasets/hour/SBER.txt";
+	std::string timestep_str;
+	switch (timestep)
+	{
+	case 1:
+		timestep_str = "day";
+		break;
+	case 24:
+		timestep_str = "hour";
+		break;
+	default:
+		timestep_str = "day";
+		break;
+	}
+	std::string file_name = "datasets/" + timestep_str + "/SBER.txt";
 	std::fstream dataset_file(file_name);
 
 	//dataset size culculating
