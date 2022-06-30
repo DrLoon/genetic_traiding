@@ -6,7 +6,7 @@
 class LGenetic {
 public:
 	int mutation_rate = 50;
-	std::string file_validation;
+	std::string file_validation = "";
 
 	LGenetic(int popSize, int genSize, std::function<double(std::vector<double>&)> _fitness_function);
 
