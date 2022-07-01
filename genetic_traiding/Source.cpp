@@ -5,6 +5,7 @@
 #include<cmath>
 #include<random>
 #include<float.h>
+#include<Windows.h>
 #include"LGenetic.h"
 #include"NeuralN.hpp"
 
@@ -20,7 +21,7 @@ const NeuralN MyNet_static = NeuralN(
 
 
 double commission_persent = 0.0004;
-double train_persent = 0.8;
+double train_persent = 0.7;
 
 int dataset_size;
 int train_size;
@@ -161,12 +162,21 @@ double loss(std::vector<double>& x, std::string file_validation) {
 		std::cout << "\tsum: " << *(cost_test.end() - 1) * amount_stocks + storage + money << "\n\n";
 		
 	}
-
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	double money_in_stockes = amount_stocks * (*(cost_test.end() - 1));
 	std::cout << "stocks: " << money_in_stockes << " ";
 	std::cout << "storage: " << storage << " ";
 	std::cout << "money: " << money << " ";
-	std::cout << "summ: " << money_in_stockes + storage + money << " ";
+	
+	double sum = money_in_stockes + storage + money;
+	std::cout << "summ: ";
+	if (sum > active_money)
+		SetConsoleTextAttribute(hConsole, 2);
+	else 
+		SetConsoleTextAttribute(hConsole, 12);
+	std::cout << sum << " ";
+
+	SetConsoleTextAttribute(hConsole, 15);
 	std::cout << "ff: " << storage / (hangry_days) << " ";
 	return money;
 }
@@ -238,11 +248,12 @@ double trade_action(std::vector<double>& x) {
 		std::cout << "\tsum: " << *(cost_train.end() - 1) * amount_stocks + storage + money << "\n";
 	}
 	return -storage*10 - money + hangry_days*100 + amount_stocks*10;
+	//return -storage;
 }
 
 void do_it() {
 	int gene_length = MyNet_static.getParamsNumber();
-	int pop_size = 32;
+	int pop_size = 128;
 	LGenetic Model
 	(
 		pop_size,
