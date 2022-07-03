@@ -9,6 +9,7 @@
 #include"LGenetic.h"
 #include"NeuralN.hpp"
 #include"TradeAgent.hpp"
+#include"Simulation.hpp"
 
 int timestep = 9; //тут 24(каждый час) или 1(каждый день)
 
