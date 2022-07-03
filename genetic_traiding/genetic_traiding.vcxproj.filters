@@ -29,5 +29,8 @@
     <ClInclude Include="NeuralN.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="TradeAgent.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
