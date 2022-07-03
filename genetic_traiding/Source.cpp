@@ -9,7 +9,7 @@
 #include"LGenetic.h"
 #include"NeuralN.hpp"
 
-bool timestep = 24; //тут 24(каждый час) или 1(каждый день)
+int timestep = 9; //тут 24(каждый час) или 1(каждый день)
 
 bool show = false;
 const int input_size = 7 * timestep;
