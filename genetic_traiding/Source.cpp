@@ -69,6 +69,8 @@ double loss(std::vector<double>& x, std::string file_validation) {
 	}
 	agent.post_stuff(test_size);
 	agent.print_results(sim.current_cost());
+	if (show)
+		agent.post_print(sim.current_cost(), test_size, timestep);
 
 	return agent.get_money();
 }
@@ -99,8 +101,10 @@ double trade_action(std::vector<double>& x) {
 		}
 	}
 	agent.post_stuff(train_size);
-	if (show)
-		agent.print_results(sim.current_cost());
+	if (show) {
+		agent.post_print(sim.current_cost(), train_size, timestep);
+		//agent.print_results(sim.current_cost());
+	}
 
 	return agent.fitness();
 }
