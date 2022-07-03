@@ -14,6 +14,8 @@ struct TradeCounters {
 	vectorI buy_days;
 	vectorI sell_days;
 	vectorI storage_days;
+	vectorI storage_every_month;
+	vectorI storage_per_month;
 };
 
 
@@ -99,6 +101,14 @@ public:
 		return ans_to_action(a);
 	}
 
+	void update_month() {
+		if (tr_cntrs.storage_every_month.size())
+			tr_cntrs.storage_per_month.push_back(storage - *(tr_cntrs.storage_every_month.end() - 1));
+		else
+			tr_cntrs.storage_per_month.push_back(storage);
+		tr_cntrs.storage_every_month.push_back(storage);
+	}
+
 	void post_stuff(int size) {
 		if (tr_cntrs.hungry_days == -1) tr_cntrs.hungry_days = size;
 		else tr_cntrs.hungry_days = std::max(tr_cntrs.hungry_days, size - tr_cntrs.sell_days[tr_cntrs.sell_days.size() - 1]);
@@ -125,14 +135,20 @@ public:
 		SetConsoleTextAttribute(hConsole, 15);
 		std::cout << "ff: " << storage / (tr_cntrs.hungry_days) << " ";
 	}
-	void post_print(double last_cost, int size, int timestep) {
+	void post_print(double last_cost, int size, int timestep, bool month_storage) {
 		std::cout << "\n\nDataset with amount of days " << size / timestep << " (" << size / timestep / 365 << " years)\n";
 		std::cout << "\thangry_days " << tr_cntrs.hungry_days / timestep << "\n";
 		std::cout << "\tdays_without_storage " << tr_cntrs.days_without_storage / timestep << "\n";
 		std::cout << "\tamount_stocks " << amount_stocks << " [price " << last_cost << "] => " << last_cost * amount_stocks << "\n";
 		std::cout << "\tmoney " << money << "\n";
 		std::cout << "\tstorage " << storage << "\n";
-		std::cout << "\tsum: " << last_cost * amount_stocks + storage + money << "\n\n";
+		std::cout << "\tsum: " << last_cost * amount_stocks + storage + money << "\n";
+		if (month_storage) {
+			std::cout << "\tstorage_per_month: ";
+			for (auto& i : tr_cntrs.storage_per_month)
+				std::cout << i << " ";
+		}
+		std::cout << "\n\n";
 		//*(cost_test.end() - 1)
 	}
 
