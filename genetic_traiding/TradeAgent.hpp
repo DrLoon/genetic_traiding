@@ -92,6 +92,43 @@ public:
 	double get_storage() const {
 		return storage;
 	}
+
+	int get_action(vectorD& input) const {
+		normolize(input);
+		auto a = NN.forward(input);
+		return ans_to_action(a);
+	}
+
+	void post_stuff(int size) {
+		if (tr_cntrs.hungry_days == -1) tr_cntrs.hungry_days = size;
+		else tr_cntrs.hungry_days = std::max(tr_cntrs.hungry_days, size - tr_cntrs.sell_days[tr_cntrs.sell_days.size() - 1]);
+
+		if (tr_cntrs.days_without_storage == -1) tr_cntrs.days_without_storage = size;
+		else tr_cntrs.days_without_storage = std::max(tr_cntrs.days_without_storage, size - tr_cntrs.storage_days[tr_cntrs.storage_days.size() - 1]);
+	}
+
+	void print_results(double last_cost) {
+		HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+		double money_in_stockes = amount_stocks * last_cost;
+		std::cout << "stocks: " << money_in_stockes << " ";
+		std::cout << "storage: " << storage << " ";
+		std::cout << "money: " << money << " ";
+
+		double sum = money_in_stockes + storage + money;
+		std::cout << "summ: ";
+		if (sum > active_money_limit)
+			SetConsoleTextAttribute(hConsole, 2);
+		else
+			SetConsoleTextAttribute(hConsole, 12);
+		std::cout << sum << " ";
+
+		SetConsoleTextAttribute(hConsole, 15);
+		std::cout << "ff: " << storage / (tr_cntrs.hungry_days) << " ";
+	}
+
+	double fitness() {
+		return -storage * 10 - money + tr_cntrs.hungry_days * 100 + amount_stocks * 10;
+	}
 	
 private:
 	const int WINDOW;
@@ -107,18 +144,19 @@ private:
 
 	void normolize(vectorD& x) const {
 		double Min = DBL_MAX;
-		double Max = 0;
+		double Max = DBL_MIN;
 		for (auto& i : x) {
 			Min = std::min(Min, i);
 			Max = std::max(Max, i);
 		}
 		/*Min = 0;
 		Max = 300;*/
+		double diff = Max - Min;
 		for (auto& i : x) {
-			i = (i - Min) / (Max - Min);
+			i = (i - Min) / diff;
 		}
 	}
-	int get_action(const vectorD& ans) const {
+	int ans_to_action(const vectorD& ans) const {
 		int action = 0;
 		for (int j = 0; j < ans.size(); ++j)
 			if (ans[j] > ans[action]) action = j;
@@ -140,13 +178,26 @@ public:
 		current_point++;
 	}
 
-	vectorD last_n_points(int n) {
-		auto m = dataset.begin() + current_point;
-		return vectorD(m, std::min(m + n, dataset.end() - 1));
+	vectorD last_n_costs(const int n) const {
+		auto end = dataset.begin() + current_point;
+		return vectorD(std::max(end - n, dataset.begin()), end);
 	}
 
-	int get_current_point() {
+	double current_cost() const {
+		return dataset[current_point];
+	}
+
+	int get_current_point() const {
 		return current_point;
+	}
+
+	bool end() const {
+		return current_point == (dataset.size() - 1);
+	}
+
+	void waste_points(const int n) {
+		for (int i = 0; i < n; ++i)
+			step();
 	}
 
 private:
