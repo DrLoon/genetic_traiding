@@ -34,7 +34,7 @@ bool TEST = false;
 
 const NeuralN new_NN_by_vec(std::vector<double>& x) {
 	NeuralN MyNet = MyNet_static;
-	MyNet.read_weitghs_from_vector(x);
+	MyNet.read_weitghs(x);
 	return MyNet;
 }
 
@@ -252,7 +252,7 @@ double trade_action(std::vector<double>& x) {
 }
 
 void do_it() {
-	int gene_length = MyNet_static.getParamsNumber();
+	int gene_length = MyNet_static.paramsNumber();
 	int pop_size = 128;
 	LGenetic Model
 	(

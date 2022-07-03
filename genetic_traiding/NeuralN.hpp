@@ -15,7 +15,23 @@ void relu(mat& input) {
 }
 void sigmoid(mat& input) {
 	for (auto& i : input) {
-		i = 1 / (exp(-i) + 1);
+		i = 1.0 / (exp(-i) + 1.0);
+	}
+}
+void tahn(mat& input) {
+	for (auto& i : input) {
+		i = 2.0 / (1 + exp(-2.0 * i)) - 1.0;
+	}
+}
+void softmax(mat& input) {
+	double s = 0;
+	double M = input.max();
+	for (auto& i : input) {
+		i -= M;
+		s += exp(i);
+	}
+	for (auto& i : input) {
+		i = exp(i) / s;
 	}
 }
 
@@ -23,11 +39,11 @@ void sigmoid(mat& input) {
 
 class NeuralN {
 public:
-	enum activation_type { SIGMOID, RELU };
+	enum activation_type { SIGMOID, RELU, SOFTMAX, TAHN };
 
 	NeuralN(std::initializer_list<int> _layers_size, std::initializer_list<activation_type> _layers_activation)
-		: layers_size(_layers_size), 
-		  layers_activation(_layers_activation)
+		: layers_size(_layers_size),
+		layers_activation(_layers_activation)
 	{
 		if (layers_size.size() - 1 != layers_activation.size()) throw "bad input";
 
@@ -60,17 +76,23 @@ public:
 				relu(in_layer);
 				//temp = max(temp, mat(temp.n_rows, temp.n_cols, fill::zeros));
 				break;
+			case SOFTMAX:
+				softmax(in_layer);
+				break;
+			case TAHN:
+				tahn(in_layer);
+				break;
 			}
 		}
-		return conv_to< std::vector<double> >::from(in_layer.row(0));
+		return conv_to< std::vector<double> >::from(in_layer);
 	}
 
 	void read_weitghs(std::istream& gin) {
-		for (auto& i : layers) 
+		for (auto& i : layers)
 			for (int j = 0; j < i.n_rows; ++j)
 				for (int k = 0; k < i.n_cols; ++k)
 					gin >> i(j, k);
-		
+
 
 		for (auto& i : biases)
 			for (int j = 0; j < i.n_rows; ++j)
@@ -79,7 +101,7 @@ public:
 
 	}
 
-	void read_weitghs_from_vector(const std::vector<double>& in_data) {
+	void read_weitghs(const std::vector<double>& in_data) {
 		int counter = 0;
 		for (auto& i : layers)
 			for (int j = 0; j < i.n_rows; ++j)
@@ -92,7 +114,7 @@ public:
 					i(j, k) = in_data[counter++];
 	}
 
-	void write_weitghs(std::string filePath) const {
+	void write_weitghs(const std::string& filePath) const {
 		std::ofstream file(filePath);
 		for (auto& i : layers)
 			for (int j = 0; j < i.n_rows; ++j)
@@ -107,7 +129,7 @@ public:
 		file.close();
 	}
 
-	int getParamsNumber() const {
+	int paramsNumber() const {
 		int res = 0;
 		for (int i = 0; i < layers_size.size() - 1; ++i) {
 			res += layers_size[i] * layers_size[i + 1];
@@ -120,8 +142,8 @@ public:
 private:
 	const std::vector<int> layers_size;
 	const std::vector<activation_type> layers_activation;
-	std::vector<mat> layers;
 
+	std::vector<mat> layers;
 	std::vector<mat> biases;
 
 };
