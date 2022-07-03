@@ -125,6 +125,16 @@ public:
 		SetConsoleTextAttribute(hConsole, 15);
 		std::cout << "ff: " << storage / (tr_cntrs.hungry_days) << " ";
 	}
+	void post_print(double last_cost, int size, int timestep) {
+		std::cout << "\n\nDataset with amount of days " << size / timestep << " (" << size / timestep / 365 << " years)\n";
+		std::cout << "\thangry_days " << tr_cntrs.hungry_days / timestep << "\n";
+		std::cout << "\tdays_without_storage " << tr_cntrs.days_without_storage / timestep << "\n";
+		std::cout << "\tamount_stocks " << amount_stocks << " [price " << last_cost << "] => " << last_cost * amount_stocks << "\n";
+		std::cout << "\tmoney " << money << "\n";
+		std::cout << "\tstorage " << storage << "\n";
+		std::cout << "\tsum: " << last_cost * amount_stocks + storage + money << "\n\n";
+		//*(cost_test.end() - 1)
+	}
 
 	double fitness() {
 		return -storage * 10 - money + tr_cntrs.hungry_days * 100 + amount_stocks * 10;
