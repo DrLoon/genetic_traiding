@@ -161,6 +161,7 @@
   <ItemGroup>
     <ClInclude Include="LGenetic.h" />
     <ClInclude Include="NeuralN.hpp" />
+    <ClInclude Include="Simulation.hpp" />
     <ClInclude Include="TradeAgent.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -75,7 +75,7 @@ double loss(std::vector<double>& x, std::string file_validation) {
 double trade_action(std::vector<double>& x) {
 	const NeuralN MyNet = new_NN_by_vec(x);
 
-	Simulation sim(cost_test);
+	Simulation sim(cost_train);
 	TradeAgent agent(input_size, MyNet);
 
 	sim.waste_points(input_size);
@@ -98,7 +98,7 @@ double trade_action(std::vector<double>& x) {
 			throw "bad action";
 		}
 	}
-	agent.post_stuff(test_size);
+	agent.post_stuff(train_size);
 	if (show)
 		agent.print_results(sim.current_cost());
 
