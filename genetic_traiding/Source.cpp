@@ -11,7 +11,7 @@
 #include"TradeAgent.hpp"
 #include"Simulation.hpp"
 
-const int timestep = 9; //тут 9(каждый час) или 1(каждый день)
+const int timestep = 9; //пїЅпїЅпїЅ 9(пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ) пїЅпїЅпїЅ 1(пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ)
 
 bool show = false;
 const int input_size = 7 * timestep;
