@@ -11,7 +11,7 @@
 #include"TradeAgent.hpp"
 #include"Simulation.hpp"
 
-int timestep = 9; //тут 24(каждый час) или 1(каждый день)
+const int timestep = 9; //тут 9(каждый час) или 1(каждый день)
 
 bool show = false;
 const int input_size = 7 * timestep;
@@ -136,7 +136,7 @@ int main() {
 	case 1:
 		timestep_str = "day";
 		break;
-	case 24:
+	case 9:
 		timestep_str = "hour";
 		break;
 	default:
