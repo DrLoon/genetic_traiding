@@ -66,8 +66,7 @@ public:
 
 				tr_cntrs.storage_days.push_back(end);
 				if (tr_cntrs.storage_days.size() > 1) {
-					size_t st_size = tr_cntrs.storage_days.size();
-					tr_cntrs.days_without_storage = std::max(tr_cntrs.days_without_storage, tr_cntrs.storage_days[st_size - 1] - tr_cntrs.storage_days[st_size - 2]);
+					tr_cntrs.days_without_storage = std::max(tr_cntrs.days_without_storage, tr_cntrs.storage_days.end()[-1] - tr_cntrs.storage_days.end()[-2]);
 				}
 				else
 					tr_cntrs.days_without_storage = tr_cntrs.storage_days[0] - WINDOW;
@@ -75,8 +74,7 @@ public:
 			amount_stocks -= 1;
 			tr_cntrs.sell_days.push_back(end);
 			if (tr_cntrs.sell_days.size() > 1) {
-				size_t st_size = tr_cntrs.sell_days.size();
-				tr_cntrs.hungry_days = std::max(tr_cntrs.hungry_days, tr_cntrs.sell_days[st_size - 1] - tr_cntrs.sell_days[st_size - 2]);
+				tr_cntrs.hungry_days = std::max(tr_cntrs.hungry_days, tr_cntrs.sell_days.end()[-1] - tr_cntrs.sell_days.end()[-2]);
 			}
 			else
 				tr_cntrs.hungry_days = tr_cntrs.sell_days[0] - WINDOW;
@@ -103,7 +101,7 @@ public:
 
 	void update_month() {
 		if (tr_cntrs.storage_every_month.size())
-			tr_cntrs.storage_per_month.push_back(storage - *(tr_cntrs.storage_every_month.end() - 1));
+			tr_cntrs.storage_per_month.push_back(storage - tr_cntrs.storage_every_month.back());
 		else
 			tr_cntrs.storage_per_month.push_back(storage);
 		tr_cntrs.storage_every_month.push_back(storage);
@@ -111,10 +109,10 @@ public:
 
 	void post_stuff(int size) {
 		if (tr_cntrs.hungry_days == -1) tr_cntrs.hungry_days = size;
-		else tr_cntrs.hungry_days = std::max(tr_cntrs.hungry_days, size - tr_cntrs.sell_days[tr_cntrs.sell_days.size() - 1]);
+		else tr_cntrs.hungry_days = std::max(tr_cntrs.hungry_days, size - tr_cntrs.sell_days.back());
 
 		if (tr_cntrs.days_without_storage == -1) tr_cntrs.days_without_storage = size;
-		else tr_cntrs.days_without_storage = std::max(tr_cntrs.days_without_storage, size - tr_cntrs.storage_days[tr_cntrs.storage_days.size() - 1]);
+		else tr_cntrs.days_without_storage = std::max(tr_cntrs.days_without_storage, size - tr_cntrs.storage_days.back());
 	}
 
 	void print_results(double last_cost) {
