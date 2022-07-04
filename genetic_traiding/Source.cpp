@@ -10,6 +10,8 @@
 #include"NeuralN.hpp"
 #include"TradeAgent.hpp"
 #include"Simulation.hpp"
+#include"DataReader.hpp"
+
 
 const int timestep = 9; // here 9 (every hour) or 1 (every day)
 
@@ -22,17 +24,12 @@ const NeuralN MyNet_static = NeuralN(
 );
 
 
-double commission_persent = 0.0004;
-double train_persent = 0.7;
-
-int dataset_size;
-int train_size;
-int test_size;
+const double commission_persent = 0.0004;
+const double train_persent = 0.7;
 
 std::vector<double> cost_train;
 std::vector<double> cost_test;
 
-bool TEST = false;
 
 const NeuralN new_NN_by_vec(std::vector<double>& x) {
 	NeuralN MyNet = MyNet_static;
@@ -97,43 +94,18 @@ void do_it() {
 int main() {
 	clock_t read = clock();
 	std::string timestep_str;
-	switch (timestep)
-	{
-	case 1:
+
+	if (timestep == 1)
 		timestep_str = "day";
-		break;
-	case 9:
+	else if (timestep == 9)
 		timestep_str = "hour";
-		break;
-	default:
-		timestep_str = "day";
-		break;
-	}
+	else
+		throw "not such thing";
+
 	std::string file_name = "datasets/" + timestep_str + "/SBER.txt";
-	std::fstream dataset_file(file_name);
 
-	//dataset size culculating
-	std::fstream count_file_copy(file_name);
-	std::istreambuf_iterator<char> begin(count_file_copy), end;
-	dataset_size = (int)std::count(begin, end, char('\n')) - 1;
-	train_size = (int)(dataset_size * train_persent);
-	test_size = dataset_size - train_size;
-	cost_train.resize(train_size);
-	cost_test.resize(test_size);
-
-	//dataset reading
-	std::string first_str;
-	dataset_file >> first_str;
-	std::cout << "start reading, first word is [ " << first_str << " ], dataset size is " << dataset_size << " [train " << train_size << " and test "<< test_size << "]\n";
-	for (int i = 0; i < train_size; i++)
-	{
-		dataset_file >> cost_train[i];
-	}
-	for (int i = 0; i < test_size; i++)
-	{
-		dataset_file >> cost_test[i];
-	}
-	std::cout << "reading is done, time is " << (double)(clock() - read) / CLOCKS_PER_SEC << " sec\n";
+	const DataReader dr(file_name);
+	std::tie(cost_train, cost_test) = dr.split_train_test(train_persent);
 
 	clock_t start = clock();
 	
