@@ -43,72 +43,30 @@ const NeuralN new_NN_by_vec(std::vector<double>& x) {
 
 double loss(std::vector<double>& x, std::string file_validation) {
 	const NeuralN MyNet = new_NN_by_vec(x);
+	Simulation sim(cost_test, commission_persent, timestep);
 
-	Simulation sim(cost_test);
-	TradeAgent agent(input_size, MyNet);
+	TradeAgent agent(input_size, MyNet, sim);
 
-	sim.waste_points(input_size);
-	while (!sim.end()) {
-		sim.step();
-		auto sample = sim.last_n_costs(input_size);
-		int action = agent.get_action(sample);
-		switch (action)
-		{
-		case 0:
-			agent.nothing();
-			break;
-		case 1:
-			agent.buy(sim.current_cost(), sim.get_current_point(), commission_persent);
-			break;
-		case 2:
-			agent.sell(sim.current_cost(), sim.get_current_point(), commission_persent);
-			break;
-		default:
-			throw "bad action";
-		}
-		if (sim.get_current_point() % (30 * timestep))
-			agent.update_month();
+	agent.do_actions_sim();
 
-	}
-	agent.post_stuff(test_size);
-	agent.print_results(sim.current_cost());
+	agent.print_results();
 	if (show)
-		agent.post_print(sim.current_cost(), test_size, timestep, true);
+		agent.post_print(true);
 
 	return agent.get_money();
 }
 double trade_action(std::vector<double>& x) {
 	const NeuralN MyNet = new_NN_by_vec(x);
+	Simulation sim(cost_train, commission_persent, timestep);
 
-	Simulation sim(cost_train);
-	TradeAgent agent(input_size, MyNet);
+	TradeAgent agent(input_size, MyNet, sim);
 
-	sim.waste_points(input_size);
-	while (!sim.end()) {
-		sim.step();
-		auto sample = sim.last_n_costs(input_size);
-		int action = agent.get_action(sample);
-		switch (action)
-		{
-		case 0:
-			agent.nothing();
-			break;
-		case 1:
-			agent.buy(sim.current_cost(), sim.get_current_point(), commission_persent);
-			break;
-		case 2:
-			agent.sell(sim.current_cost(), sim.get_current_point(), commission_persent);
-			break;
-		default:
-			throw "bad action";
-		}
-		if (sim.get_current_point() % (30 * timestep))
-			agent.update_month();
-	}
-	agent.post_stuff(train_size);
-	if (show)
-		agent.post_print(sim.current_cost(), train_size, timestep, false);
+	agent.do_actions_sim();
+
+	if (show) {
+		agent.post_print(false);
 		//agent.print_results(sim.current_cost());
+	}
 
 	return agent.fitness();
 }
@@ -127,7 +85,7 @@ void do_it() {
 	Model.set_crossover(LGenetic::SPBX);
 	Model.set_mutation(LGenetic::AM);
 	Model.set_loss(loss);
-	Model.learn(10);
+	Model.learn(100);
 
 	auto best = Model.best_gene();
 	show = true;

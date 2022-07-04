@@ -3,6 +3,7 @@
 #include <string>
 
 #include "NeuralN.hpp"
+#include "Simulation.hpp"
 
 struct TradeCounters {
 	using vectorD = std::vector<double>;
@@ -16,6 +17,7 @@ struct TradeCounters {
 	vectorI storage_days;
 	vectorI storage_every_month;
 	vectorI storage_per_month;
+	int trade_days = 0;
 };
 
 
@@ -25,7 +27,7 @@ class TradeAgent {
 public:
 	const int id = 0;
 
-	TradeAgent(int _window, const NeuralN& _nn, const int _id = 0) : WINDOW(_window), NN(_nn), id(_id) 
+	TradeAgent(int _window, const NeuralN& _nn, Simulation& _sim, const int _id = 0) : WINDOW(_window), NN(_nn), id(_id), sim(_sim)
 	{
 	}
 
@@ -107,7 +109,8 @@ public:
 		tr_cntrs.storage_every_month.push_back(storage);
 	}
 
-	void post_stuff(int size) {
+	void post_stuff() {
+		int size = sim.dataset_size();
 		if (tr_cntrs.hungry_days == -1) tr_cntrs.hungry_days = size;
 		else tr_cntrs.hungry_days = std::max(tr_cntrs.hungry_days, size - tr_cntrs.sell_days.back());
 
@@ -115,7 +118,8 @@ public:
 		else tr_cntrs.days_without_storage = std::max(tr_cntrs.days_without_storage, size - tr_cntrs.storage_days.back());
 	}
 
-	void print_results(double last_cost) {
+	void print_results() const {
+		double last_cost = sim.current_cost();
 		HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 		double money_in_stockes = amount_stocks * last_cost;
 		std::cout << "stocks: " << money_in_stockes << " ";
@@ -133,7 +137,11 @@ public:
 		SetConsoleTextAttribute(hConsole, 15);
 		std::cout << "ff: " << storage / (tr_cntrs.hungry_days) << " ";
 	}
-	void post_print(double last_cost, int size, int timestep, bool month_storage) {
+	void post_print(bool month_storage) const {
+		double last_cost = sim.current_cost();
+		int size = sim.dataset_size();
+		int timestep = sim.timestep;
+
 		std::cout << "\n\nDataset with amount of days " << size / timestep << " (" << size / timestep / 365 << " years)\n";
 		std::cout << "\thangry_days " << tr_cntrs.hungry_days / timestep << "\n";
 		std::cout << "\tdays_without_storage " << tr_cntrs.days_without_storage / timestep << "\n";
@@ -150,13 +158,37 @@ public:
 		//*(cost_test.end() - 1)
 	}
 
-	double fitness() {
-		return -storage * 10 - money + tr_cntrs.hungry_days * 100 + amount_stocks * 10;
+	double fitness() const {
+		return -storage * 10 - money + (double)tr_cntrs.hungry_days * 100 + (double)amount_stocks * 10;
 	}
 	
+	void do_actions_sim() {
+		sim.waste_points(WINDOW);
+		while (!sim.end()) {
+			auto sample = sim.last_n_costs(WINDOW);
+
+			int action = get_action(sample);
+			if (action == 0)
+				nothing();
+			else if (action == 1)
+				buy(sim.current_cost(), sim.get_current_point(), sim.commission_persent);
+			else if (action == 2)
+				sell(sim.current_cost(), sim.get_current_point(), sim.commission_persent);
+			else
+				throw "bad action";
+			if (sim.get_current_point() % (30 * sim.timestep))
+				update_month();
+
+			sim.step();
+			tr_cntrs.trade_days++;
+		}
+		post_stuff();
+	}
+
 private:
 	const int WINDOW;
 	const NeuralN NN;
+	Simulation& const sim;
 
 	TradeCounters tr_cntrs;
 
@@ -168,7 +200,7 @@ private:
 
 	void normolize(vectorD& x) const {
 		double Min = DBL_MAX;
-		double Max = DBL_MIN;
+		double Max = -DBL_MAX;
 		for (auto& i : x) {
 			Min = std::min(Min, i);
 			Max = std::max(Max, i);

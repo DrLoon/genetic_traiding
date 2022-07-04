@@ -9,12 +9,20 @@ class Simulation {
 	using vectorI = std::vector<int>;
 
 public:
-	Simulation(const vectorD& _dataset) : dataset(_dataset) {
+	const double commission_persent;
+	const int timestep;
 
+	Simulation(const vectorD& _dataset, const double _commission_persent, const int _timestep)
+		: dataset(_dataset), commission_persent(_commission_persent), timestep(_timestep)
+	{
 	}
 
 	void step() {
 		current_point++;
+	}
+
+	int dataset_size() const {
+		return dataset.size();
 	}
 
 	vectorD last_n_costs(const int n) const {
@@ -40,7 +48,7 @@ public:
 	}
 
 private:
-	const vectorD dataset;
+	const vectorD& const dataset;
 
 	int current_point = 0;
 };
