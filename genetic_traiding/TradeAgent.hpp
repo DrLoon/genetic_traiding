@@ -160,8 +160,8 @@ public:
 
 	double fitness() const {
 		vectorI a = tr_cntrs.storage_per_month;
-		//const double uni = uniformity(a) * 100000000;
-		const double uni = uniformity2(a) * 10000000;
+		const double uni = uniformity(a) * 100000000;  // 100000000
+		//const double uni = uniformity2(a) * 100000000;  // 10000000
 		return -storage * 10 - money + (double)tr_cntrs.hungry_days * 100 + (double)amount_stocks * 10 + uni;
 	}
 	

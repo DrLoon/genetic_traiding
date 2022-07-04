@@ -19,8 +19,8 @@ bool show = false;
 const int input_size = 7 * timestep;
 const int output_size = 3;
 const NeuralN MyNet_static = NeuralN(
-	{ input_size, 25, 15, 5, output_size }, 
-	{ NeuralN::RELU, NeuralN::RELU, NeuralN::RELU, NeuralN::SIGMOID }
+	{ input_size, 40, 20, 10, output_size }, 
+	{ NeuralN::RELU, NeuralN::RELU, NeuralN::RELU, NeuralN::RELU }
 );
 
 
@@ -82,7 +82,7 @@ void do_it() {
 	Model.set_crossover(LGenetic::SPBX);
 	Model.set_mutation(LGenetic::AM);
 	Model.set_loss(loss);
-	Model.learn(100);
+	Model.learn(10);
 
 	auto best = Model.best_gene();
 	show = true;
@@ -102,7 +102,7 @@ int main() {
 	else
 		throw "not such thing";
 
-	std::string file_name = "datasets/" + timestep_str + "/SBER.txt";
+	std::string file_name = "datasets/" + timestep_str + "/MGNT.txt";
 
 	const DataReader dr(file_name);
 	std::tie(cost_train, cost_test) = dr.split_train_test(train_persent);
