@@ -40,7 +40,7 @@ void LGenetic::learn(int generationsNum) {
 	{
 		current_iteration = t;
 		sort();
-		std::cout << t << " - " << abs(fitness_function(b_gene)) << " | " << loss(b_gene, file_validation) << "\n";
+		std::cout << t << " - " << fitness_function(b_gene) << " | " << loss(b_gene, file_validation) << "\n";
 
 		crossover();
 		//(rand() % 100 > 50) ? crossover() : this->TPINV();

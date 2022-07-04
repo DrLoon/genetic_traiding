@@ -61,7 +61,7 @@ double trade_action(std::vector<double>& x) {
 	agent.do_actions_sim();
 
 	if (show) {
-		agent.post_print(false);
+		agent.post_print(true);
 		//agent.print_results(sim.current_cost());
 	}
 

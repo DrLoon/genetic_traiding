@@ -135,7 +135,7 @@ public:
 		std::cout << sum << " ";
 
 		SetConsoleTextAttribute(hConsole, 15);
-		std::cout << "ff: " << storage / (tr_cntrs.hungry_days) << " ";
+		std::cout << "ff: " << fitness() << " ";
 	}
 	void post_print(bool month_storage) const {
 		double last_cost = sim.current_cost();
@@ -159,7 +159,10 @@ public:
 	}
 
 	double fitness() const {
-		return -storage * 10 - money + (double)tr_cntrs.hungry_days * 100 + (double)amount_stocks * 10;
+		vectorI a = tr_cntrs.storage_per_month;
+		//const double uni = uniformity(a) * 100000000;
+		const double uni = uniformity2(a) * 10000000;
+		return -storage * 10 - money + (double)tr_cntrs.hungry_days * 100 + (double)amount_stocks * 10 + uni;
 	}
 	
 	void do_actions_sim() {
@@ -176,7 +179,7 @@ public:
 				sell(sim.current_cost(), sim.get_current_point(), sim.commission_persent);
 			else
 				throw "bad action";
-			if (sim.get_current_point() % (30 * sim.timestep))
+			if (sim.get_current_point() % (30 * sim.timestep) == 0)
 				update_month();
 
 			sim.step();
@@ -212,10 +215,62 @@ private:
 			i = (i - Min) / diff;
 		}
 	}
+	vectorD normolize(const vectorI& x) const {
+		int Min = INT_MAX;
+		int Max = -INT_MAX;
+		for (auto& i : x) {
+			Min = std::min(Min, i);
+			Max = std::max(Max, i);
+		}
+		/*Min = 0;
+		Max = 300;*/
+		int diff = Max - Min;
+		if (diff == 0)
+			return vectorD(x.size(), 1);
+		vectorD res(x.size());
+		for (int i = 0; i < x.size(); ++i) {
+			res[i] = static_cast<double>(x[i] - Min) / diff;
+		}
+		return res;
+	}
 	int ans_to_action(const vectorD& ans) const {
 		int action = 0;
 		for (int j = 0; j < ans.size(); ++j)
 			if (ans[j] > ans[action]) action = j;
 		return action;
+	}
+	
+	double uniformity(const vectorI x) const {
+		const vectorD norm = normolize(x);
+		double Min = DBL_MAX;
+		double Max = -DBL_MAX;
+		for (auto& i : norm) {
+			Min = std::min(Min, i);
+			Max = std::max(Max, i);
+		}
+
+		int not_null = 0;
+		for (auto& i : x)
+			if (i != 0)
+				++not_null;
+		return static_cast<double>(Max - Min + 1) / (not_null*10 + 1);
+	}
+	double uniformity2(const vectorI x) const {
+		const vectorD norm = normolize(x);
+		double mean = 0;
+		for (auto& i : norm) {
+			mean += i;
+		}
+		mean /= norm.size();
+		double s_diff = 0;
+		for (auto& i : norm) {
+			s_diff += abs(i - mean);
+		}
+
+		int not_null = 0;
+		for (auto& i : x)
+			if (i != 0)
+				++not_null;
+		return static_cast<double>(s_diff + 1) / (not_null * 10 + 1);
 	}
 };
