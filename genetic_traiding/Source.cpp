@@ -13,7 +13,7 @@
 #include"DataReader.hpp"
 
 
-const int timestep = 9; // here 9 (every hour) or 1 (every day)
+const int timestep = 1; // here 9 (every hour) or 1 (every day)
 
 bool show = false;
 const int input_size = 7 * timestep;
@@ -82,7 +82,7 @@ void do_it() {
 	Model.set_crossover(LGenetic::SPBX);
 	Model.set_mutation(LGenetic::AM);
 	Model.set_loss(loss);
-	Model.learn(100);
+	Model.learn(1000);
 
 	auto best = Model.best_gene();
 	show = true;

@@ -162,7 +162,8 @@ public:
 		vectorI a = tr_cntrs.storage_per_month;
 		//const double uni = uniformity(a) * 100000000;
 		const double uni = uniformity2(a) * 10000000;
-		return -storage * 10 - money + (double)tr_cntrs.hungry_days * 100 + (double)amount_stocks * 10 + uni;
+		return -storage * 10  + uniformity3(a);
+		//return -storage * 10 - money + (double)tr_cntrs.hungry_days * 100 + (double)amount_stocks * 10 + uni;
 	}
 	
 	void do_actions_sim() {
@@ -226,7 +227,7 @@ private:
 		Max = 300;*/
 		int diff = Max - Min;
 		if (diff == 0)
-			return vectorD(x.size(), 1);
+			return vectorD(x.size(), std::min(x[0], 1));
 		vectorD res(x.size());
 		for (int i = 0; i < x.size(); ++i) {
 			res[i] = static_cast<double>(x[i] - Min) / diff;
@@ -272,5 +273,22 @@ private:
 			if (i != 0)
 				++not_null;
 		return static_cast<double>(s_diff + 1) / (not_null * 10 + 1);
+	}
+	double uniformity3(const vectorI x) const {
+		const vectorD norm = normolize(x);
+		double mean = 0;
+		int not_null = 0;
+		for (auto& i : norm) {
+			mean += i;
+			if (i) ++not_null;
+		}
+		if (mean == 0) return norm.size();
+		mean /= not_null;
+
+		double s_diff = 0;
+		for (auto& i : norm) {
+			s_diff += i ? abs(i - mean) : mean;
+		}
+		return s_diff;
 	}
 };
