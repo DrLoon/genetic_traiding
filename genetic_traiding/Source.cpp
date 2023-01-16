@@ -1,3 +1,4 @@
+#define PYPLT
 #include<iostream>
 #include<fstream>
 #include<vector>
@@ -5,8 +6,9 @@
 #include<cmath>
 #include<random>
 #include<float.h>
+#define NOMINMAX
 #include<Windows.h>
-#include"LGenetic.h"
+#include"LGenetic.hpp"
 #include"NeuralN.hpp"
 #include"TradeAgent.hpp"
 #include"Simulation.hpp"
@@ -38,7 +40,7 @@ const NeuralN new_NN_by_vec(std::vector<double>& x) {
 }
 
 
-double loss(std::vector<double>& x, std::string file_validation) {
+double loss(std::vector<double>& x) {
 	const NeuralN MyNet = new_NN_by_vec(x);
 	Simulation sim(cost_test, commission_persent, timestep);
 
@@ -68,26 +70,25 @@ double trade_action(std::vector<double>& x) {
 	return agent.fitness();
 }
 
-void do_it() {
-	int gene_length = MyNet_static.paramsNumber();
-	int pop_size = 128;
-	LGenetic Model
-	(
-		pop_size,
-		gene_length,
-		trade_action
-	);
 
-	Model.rand_population_normal();
-	Model.set_crossover(LGenetic::SPBX);
-	Model.set_mutation(LGenetic::AM);
-	Model.set_loss(loss);
-	Model.learn(1000);
+void training(int times) {
+	LGenetic model(128, MyNet_static.paramsNumber(), trade_action);
+	model.rand_population_uniform();
+	model.set_crossover(LGenetic::SPBX);
+	model.set_mutation(LGenetic::AM);
+	model.enable_multiprocessing(10);
+	//model.enable_avarage_fitness(10);
+	model.set_loss(loss);
+	model.learn(times);
+#ifdef PYPLT
+	model.show_plt_avarage();
+#endif
 
-	auto best = Model.best_gene();
+	auto best = model.best_gene();
+
 	show = true;
 	trade_action(best);
-	loss(best, "heh");
+	loss(best);
 	show = false;
 }
 
@@ -109,7 +110,7 @@ int main() {
 
 	clock_t start = clock();
 	
-	do_it();
+	training(6000);
 
 	clock_t now = clock();
 	std::cout << (double)(now - start) / CLOCKS_PER_SEC << " sec\n";
