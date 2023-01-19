@@ -41,7 +41,7 @@ public:
 		if (cost <= 0 || end < 0)
 			throw "something wrong";
 			
-		if (money > cost) {
+		if (money > cost * (1 + commission_persent)) {
 			money -= cost;
 			money -= cost * commission_persent; //commission
 			amount_stocks += 1;
@@ -59,7 +59,7 @@ public:
 		if (cost <= 0 || end < 0)
 			throw "something wrong";
 
-		if (amount_stocks > 0) {
+		if (amount_stocks > 0 && money > cost * commission_persent) {
 			money += cost;
 			money -= cost * commission_persent; //commission
 			if (money > active_money_limit) {
@@ -106,6 +106,7 @@ public:
 			tr_cntrs.storage_per_month.push_back(storage - tr_cntrs.storage_every_month.back());
 		else
 			tr_cntrs.storage_per_month.push_back(storage);
+
 		tr_cntrs.storage_every_month.push_back(storage);
 	}
 
@@ -160,10 +161,15 @@ public:
 
 	double fitness() const {
 		vectorI a = tr_cntrs.storage_per_month;
-		//const double uni = uniformity(a) * 100000000;
+		////const double uni = uniformity(a) * 100000000;
 		const double uni = uniformity2(a) * 10000000;
-		return -storage * 10  + uniformity3(a);
-		//return -storage * 10 - money + (double)tr_cntrs.hungry_days * 100 + (double)amount_stocks * 10 + uni;
+		//return -storage * 10  + uniformity3(a);
+		return -storage * 10 - money + (double)tr_cntrs.hungry_days * 100 + (double)amount_stocks * 10 + uni;
+		double mean = 0;
+		for (auto& i : tr_cntrs.storage_per_month)
+			mean += i;
+		mean /= tr_cntrs.storage_per_month.size();
+		return mean;
 	}
 	
 	void do_actions_sim() {
@@ -171,15 +177,22 @@ public:
 		while (!sim.end()) {
 			auto sample = sim.last_n_costs(WINDOW);
 
-			int action = get_action(sample);
-			if (action == 0)
+			switch (get_action(sample))
+			{
+			case 0:
 				nothing();
-			else if (action == 1)
+				break;
+			case 1:
 				buy(sim.current_cost(), sim.get_current_point(), sim.commission_persent);
-			else if (action == 2)
+				break;
+			case 2:
 				sell(sim.current_cost(), sim.get_current_point(), sim.commission_persent);
-			else
+				break;
+			default:
 				throw "bad action";
+				break;
+			}
+
 			if (sim.get_current_point() % (30 * sim.timestep) == 0)
 				update_month();
 
