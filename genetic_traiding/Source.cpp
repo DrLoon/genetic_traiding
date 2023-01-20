@@ -33,7 +33,7 @@ std::vector<double> cost_train;
 std::vector<double> cost_test;
 
 
-const NeuralN new_NN_by_vec(std::vector<double>& x) {
+const NeuralN new_NN_by_vec(const std::vector<double>& x) {
 	NeuralN MyNet = MyNet_static;
 	MyNet.read_weitghs(x);
 	return MyNet;
@@ -54,7 +54,7 @@ double loss(std::vector<double>& x) {
 
 	return agent.get_money();
 }
-double trade_action(std::vector<double>& x) {
+double trade_action(const std::vector<double>& x) {
 	const NeuralN MyNet = new_NN_by_vec(x);
 	Simulation sim(cost_train, commission_persent, timestep);
 
