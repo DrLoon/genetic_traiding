@@ -1,4 +1,4 @@
-#define PYPLT
+//#define PYPLT
 #include<iostream>
 #include<fstream>
 #include<vector>
@@ -13,6 +13,7 @@
 #include"TradeAgent.hpp"
 #include"Simulation.hpp"
 #include"DataReader.hpp"
+#include"MCTS_copy.hpp"
 
 
 const int timestep = 1; // here 9 (every hour) or 1 (every day)
@@ -44,7 +45,7 @@ double loss(std::vector<double>& x) {
 	const NeuralN MyNet = new_NN_by_vec(x);
 	Simulation sim(cost_test, commission_persent, timestep);
 
-	TradeAgent agent(input_size, MyNet, sim);
+	TradeAgent agent(input_size, sim);
 
 	agent.do_actions_sim();
 
@@ -54,42 +55,67 @@ double loss(std::vector<double>& x) {
 
 	return agent.get_money();
 }
-double trade_action(const std::vector<double>& x) {
-	const NeuralN MyNet = new_NN_by_vec(x);
-	Simulation sim(cost_train, commission_persent, timestep);
+//double trade_action(const std::vector<double>& x) {
+//	const NeuralN MyNet = new_NN_by_vec(x);
+//	Simulation sim(cost_train, commission_persent, timestep);
+//
+//	TradeAgent agent(input_size, MyNet, sim);
+//
+//	agent.do_actions_sim();
+//
+//	if (show) {
+//		agent.post_print(true);
+//		//agent.print_results(sim.current_cost());
+//	}
+//
+//	return agent.fitness();
+//}
 
-	TradeAgent agent(input_size, MyNet, sim);
 
-	agent.do_actions_sim();
+//void training(int times) {
+//	LGenetic model(128, MyNet_static.paramsNumber(), trade_action);
+//	model.rand_population_uniform();
+//	model.set_crossover(LGenetic::SPBX);
+//	model.set_mutation(LGenetic::AM);
+//	model.enable_multiprocessing(10);
+//	//model.enable_avarage_fitness(10);
+//	model.set_loss(loss);
+//	model.learn(times);
+//#ifdef PYPLT
+//	model.show_plt_avarage();
+//#endif
+//
+//	auto best = model.best_gene();
+//
+//	show = true;
+//	trade_action(best);
+//	loss(best);
+//	show = false;
+//}
 
-	if (show) {
-		agent.post_print(true);
-		//agent.print_results(sim.current_cost());
+
+int get_max_action(std::vector<std::tuple<int, double, int>>& res) {
+	double max_v = -99999999999;
+	int max_ind = -1;
+	for (int i = 0; i < res.size(); ++i) {
+		if (max_v < std::get<1>(res[i])) {
+			max_v = std::get<1>(res[i]);
+			max_ind = i;
+		}
 	}
-
-	return agent.fitness();
+	return std::get<0>(res[max_ind]);
 }
-
-
-void training(int times) {
-	LGenetic model(128, MyNet_static.paramsNumber(), trade_action);
-	model.rand_population_uniform();
-	model.set_crossover(LGenetic::SPBX);
-	model.set_mutation(LGenetic::AM);
-	model.enable_multiprocessing(10);
-	//model.enable_avarage_fitness(10);
-	model.set_loss(loss);
-	model.learn(times);
-#ifdef PYPLT
-	model.show_plt_avarage();
-#endif
-
-	auto best = model.best_gene();
-
-	show = true;
-	trade_action(best);
-	loss(best);
-	show = false;
+void solveMC() {
+	Simulation sim(cost_train, commission_persent, timestep);
+	TradeAgent agent(input_size, sim);
+	while (!agent.isDone()) {
+		MCTS mcts(100, agent);
+		auto res = mcts.run();
+		int action = get_max_action(res);
+		agent.step(action, true);
+		std::cout << "1\n";
+	}
+	agent.print_results();
 }
 
 int main() {
@@ -110,7 +136,8 @@ int main() {
 
 	clock_t start = clock();
 	
-	training(6000);
+	//training(6000);
+	solveMC();
 
 	clock_t now = clock();
 	std::cout << (double)(now - start) / CLOCKS_PER_SEC << " sec\n";

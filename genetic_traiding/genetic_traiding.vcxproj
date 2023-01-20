@@ -156,10 +156,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp" />
+    <ClCompile Include="TradeAgent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DataReader.hpp" />
     <ClInclude Include="LGenetic.hpp" />
+    <ClInclude Include="MCTS_copy.hpp" />
     <ClInclude Include="NeuralN.hpp" />
     <ClInclude Include="Simulation.hpp" />
     <ClInclude Include="TradeAgent.hpp" />

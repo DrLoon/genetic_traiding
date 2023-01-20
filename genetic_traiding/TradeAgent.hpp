@@ -4,35 +4,40 @@
 
 #include "NeuralN.hpp"
 #include "Simulation.hpp"
+#include "MCTS_copy.hpp"
 
-struct TradeCounters {
-	using vectorD = std::vector<double>;
-	using vectorI = std::vector<int>;
+//struct TradeCounters {
+//	using vectorD = std::vector<double>;
+//	using vectorI = std::vector<int>;
+//
+//	int ignor_days = 0;
+//	int hungry_days = -1;
+//	int days_without_storage = -1;
+//	vectorI buy_days;
+//	vectorI sell_days;
+//	vectorI storage_days;
+//	vectorI storage_every_month;
+//	vectorI storage_per_month;
+//	int trade_days = 0;
+//};
 
-	int ignor_days = 0;
-	int hungry_days = -1;
-	int days_without_storage = -1;
-	vectorI buy_days;
-	vectorI sell_days;
-	vectorI storage_days;
-	vectorI storage_every_month;
-	vectorI storage_per_month;
-	int trade_days = 0;
-};
 
-
-class TradeAgent {
+class TradeAgent : public IEnviroment {
 	using vectorD = std::vector<double>;
 	using vectorI = std::vector<int>;
 public:
 	const int id = 0;
+	bool isDone() {
+		return sim.end();
+	}
 
-	TradeAgent(int _window, const NeuralN& _nn, Simulation& _sim, const int _id = 0) : WINDOW(_window), NN(_nn), id(_id), sim(_sim)
+	TradeAgent(int _window, Simulation _sim, const int _id = 0) : WINDOW(_window), id(_id), sim(_sim)
 	{
+		sim.waste_points(WINDOW);
 	}
 
 	void nothing() {
-		tr_cntrs.ignor_days++;
+		//tr_cntrs.ignor_days++;
 	}
 	bool buy(const double& cost, const int& end, const double commission_persent) {
 		// TODO: add any count to buy
@@ -45,7 +50,7 @@ public:
 			money -= cost;
 			money -= cost * commission_persent; //commission
 			amount_stocks += 1;
-			tr_cntrs.buy_days.push_back(end);
+			//tr_cntrs.buy_days.push_back(end);
 
 			return true;
 		}
@@ -66,20 +71,20 @@ public:
 				storage += money - active_money_limit;
 				money = active_money_limit;
 
-				tr_cntrs.storage_days.push_back(end);
-				if (tr_cntrs.storage_days.size() > 1) {
+				//tr_cntrs.storage_days.push_back(end);
+				/*if (tr_cntrs.storage_days.size() > 1) {
 					tr_cntrs.days_without_storage = std::max(tr_cntrs.days_without_storage, tr_cntrs.storage_days.end()[-1] - tr_cntrs.storage_days.end()[-2]);
 				}
 				else
-					tr_cntrs.days_without_storage = tr_cntrs.storage_days[0] - WINDOW;
+					tr_cntrs.days_without_storage = tr_cntrs.storage_days[0] - WINDOW;*/
 			}
 			amount_stocks -= 1;
-			tr_cntrs.sell_days.push_back(end);
-			if (tr_cntrs.sell_days.size() > 1) {
+			//tr_cntrs.sell_days.push_back(end);
+			/*if (tr_cntrs.sell_days.size() > 1) {
 				tr_cntrs.hungry_days = std::max(tr_cntrs.hungry_days, tr_cntrs.sell_days.end()[-1] - tr_cntrs.sell_days.end()[-2]);
 			}
 			else
-				tr_cntrs.hungry_days = tr_cntrs.sell_days[0] - WINDOW;
+				tr_cntrs.hungry_days = tr_cntrs.sell_days[0] - WINDOW;*/
 
 			return true;
 		}
@@ -96,27 +101,26 @@ public:
 	}
 
 	int get_action(vectorD& input) const {
-		normolize(input);
+		/*normolize(input);
 		auto a = NN.forward(input);
-		return ans_to_action(a);
+		return ans_to_action(a);*/
+		throw;
+		return 0;
 	}
 
 	void update_month() {
-		if (tr_cntrs.storage_every_month.size())
+		/*if (tr_cntrs.storage_every_month.size())
 			tr_cntrs.storage_per_month.push_back(storage - tr_cntrs.storage_every_month.back());
 		else
 			tr_cntrs.storage_per_month.push_back(storage);
 
-		tr_cntrs.storage_every_month.push_back(storage);
-	}
+		tr_cntrs.storage_every_month.push_back(storage);*/
 
-	void post_stuff() {
-		int size = sim.dataset_size();
-		if (tr_cntrs.hungry_days == -1) tr_cntrs.hungry_days = size;
-		else tr_cntrs.hungry_days = std::max(tr_cntrs.hungry_days, size - tr_cntrs.sell_days.back());
-
-		if (tr_cntrs.days_without_storage == -1) tr_cntrs.days_without_storage = size;
-		else tr_cntrs.days_without_storage = std::max(tr_cntrs.days_without_storage, size - tr_cntrs.storage_days.back());
+		++month_done;
+		double diff = storage - last_storage;
+		mean_store += diff;
+		variance_store += diff * diff;
+		last_storage = storage;
 	}
 
 	void print_results() const {
@@ -136,7 +140,7 @@ public:
 		std::cout << sum << " ";
 
 		SetConsoleTextAttribute(hConsole, 15);
-		std::cout << "ff: " << fitness() << " ";
+		//std::cout << "ff: " << fitness() << " ";
 	}
 	void post_print(bool month_storage) const {
 		double last_cost = sim.current_cost();
@@ -144,32 +148,34 @@ public:
 		int timestep = sim.timestep;
 
 		std::cout << "\n\nDataset with amount of days " << size / timestep << " (" << size / timestep / 365 << " years)\n";
-		std::cout << "\thangry_days " << tr_cntrs.hungry_days / timestep << "\n";
-		std::cout << "\tdays_without_storage " << tr_cntrs.days_without_storage / timestep << "\n";
+		//std::cout << "\thangry_days " << tr_cntrs.hungry_days / timestep << "\n";
+		//std::cout << "\tdays_without_storage " << tr_cntrs.days_without_storage / timestep << "\n";
 		std::cout << "\tamount_stocks " << amount_stocks << " [price " << last_cost << "] => " << last_cost * amount_stocks << "\n";
 		std::cout << "\tmoney " << money << "\n";
 		std::cout << "\tstorage " << storage << "\n";
 		std::cout << "\tsum: " << last_cost * amount_stocks + storage + money << "\n";
-		if (month_storage) {
-			std::cout << "\tstorage_per_month: ";
-			for (auto& i : tr_cntrs.storage_per_month)
-				std::cout << i << " ";
-		}
+		//if (month_storage) {
+			//std::cout << "\tstorage_per_month: ";
+			/*for (auto& i : tr_cntrs.storage_per_month)
+				std::cout << i << " ";*/
+		//}
 		std::cout << "\n\n";
 		//*(cost_test.end() - 1)
 	}
 
 	double fitness() const {
-		vectorI a = tr_cntrs.storage_per_month;
-		////const double uni = uniformity(a) * 100000000;
-		const double uni = uniformity2(a) * 10000000;
-		//return -storage * 10  + uniformity3(a);
-		return -storage * 10 - money + (double)tr_cntrs.hungry_days * 100 + (double)amount_stocks * 10 + uni;
-		double mean = 0;
-		for (auto& i : tr_cntrs.storage_per_month)
-			mean += i;
-		mean /= tr_cntrs.storage_per_month.size();
-		return mean;
+		//vectorI a = tr_cntrs.storage_per_month;
+		//////const double uni = uniformity(a) * 100000000;
+		//const double uni = uniformity2(a) * 10000000;
+		////return -storage * 10  + uniformity3(a);
+		//return -storage * 10 - money + (double)tr_cntrs.hungry_days * 100 + (double)amount_stocks * 10 + uni;
+		//double mean = 0;
+		//for (auto& i : tr_cntrs.storage_per_month)
+		//	mean += i;
+		//mean /= tr_cntrs.storage_per_month.size();
+		//return -mean;
+		throw;
+		return 0;
 	}
 	
 	void do_actions_sim() {
@@ -197,17 +203,125 @@ public:
 				update_month();
 
 			sim.step();
-			tr_cntrs.trade_days++;
+			//tr_cntrs.trade_days++;
 		}
-		post_stuff();
+	}
+
+	std::pair<double, double> calculate_stats_distribution() {
+		auto sample = sim.last_n_costs(WINDOW);
+		//statistics 
+		double mean = 0;
+		double variance = 0;
+		int n = sample.size();
+		if (n < 2) throw;
+		for (int i = 1; i < n; ++i)
+		{
+			double diff = sample[i] - sample[i - 1];
+			mean += diff;
+		}
+		mean /= n;
+		for (int i = 1; i < n; ++i)
+		{
+			double diff = sample[i] - sample[i - 1];
+			variance += (diff - mean) * (diff - mean);
+		}
+		variance /= n - 1;
+		return std::make_pair(mean, variance);
+	}
+
+
+	virtual void step(const int action, const bool isGreen) override {
+		if (isGreen) {
+			last_cost = sim.current_cost();
+			switch (action)
+			{
+			case 0:
+				nothing();
+				break;
+			case 1:
+				buy(sim.current_cost(), sim.get_current_point(), sim.commission_persent);
+				break;
+			case 2:
+				sell(sim.current_cost(), sim.get_current_point(), sim.commission_persent);
+				break;
+			default:
+				throw "bad action";
+				break;
+			}
+
+			if (sim.get_current_point() % (30 * sim.timestep) == 0)
+				update_month();
+
+			sim.step();
+		}
+		else {
+			int n = 4;
+			auto [mean, var] = calculate_stats_distribution();
+			var = sqrt(var);
+			double s1 = mean - 1.5 * var;
+			double s2 = mean - 3 * var;
+			double s3 = mean + 1.5 * var;
+			double s4 = mean + 3 * var;
+			switch (action)
+			{
+			case 0:
+				sim.replace_cost(last_cost + s1);
+				break;
+			case 1:
+				sim.replace_cost(last_cost + s2);
+				break;
+			case 2:
+				sim.replace_cost(last_cost + s3);
+				break;
+			case 3:
+				sim.replace_cost(last_cost + s4);
+				break;
+			default:
+				break;
+			}
+		}
+	}
+	virtual int actions_number() const override {
+		throw "";
+		return 0;
+	}
+	virtual std::pair<double, std::vector<int>> evaluate(const int action, const bool isGreen) const override {
+		if (isGreen) {
+			double mean = 0;
+			double variance = 0;
+			if (month_done) { 
+				mean = mean_store / month_done; 
+				variance = (variance_store - mean * mean) / month_done;
+			}
+			return { -variance, {0, 1, 2, 3} };
+		}
+		else {
+			double mean = 0;
+			double variance = 0;
+			if (month_done) {
+				mean = mean_store / month_done;
+				variance = (variance_store - mean * mean) / month_done;
+			}
+			return { -variance, {0, 1, 2} };
+		}
+	}
+	virtual std::shared_ptr<IEnviroment> clone() const override {
+		return std::shared_ptr<IEnviroment>(new TradeAgent(*this));
 	}
 
 private:
 	const int WINDOW;
-	const NeuralN NN;
+	//const NeuralN NN;
 	Simulation& const sim;
 
-	TradeCounters tr_cntrs;
+	//statistics 
+	double mean_store = 0;
+	double variance_store = 0;
+	double last_storage = 0;
+	int month_done = 0;
+	double last_cost = -1;
+
+	//TradeCounters tr_cntrs;
 
 	double money = 10000;
 	const double active_money_limit = money;
