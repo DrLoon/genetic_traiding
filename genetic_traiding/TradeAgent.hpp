@@ -36,10 +36,21 @@ public:
 		sim.waste_points(WINDOW);
 	}
 
+
+	// конструктор копирования
+	TradeAgent(const TradeAgent& ref_Point) 
+		: WINDOW(ref_Point.WINDOW), id(ref_Point.id), sim(ref_Point.sim), 
+		mean_store(ref_Point.mean_store), variance_store(ref_Point.variance_store),
+		last_storage(ref_Point.last_storage), month_done(ref_Point.month_done), last_cost(ref_Point.last_cost),
+		money(ref_Point.money), storage(ref_Point.storage), amount_stocks(ref_Point.amount_stocks)
+	{
+		//sim.waste_points(WINDOW);
+	}
+
 	void nothing() {
 		//tr_cntrs.ignor_days++;
 	}
-	bool buy(const double& cost, const int& end, const double commission_persent) {
+	bool buy(const double& cost, const int& end, const double& commission_persent) {
 		// TODO: add any count to buy
 		// return success or not
 
@@ -265,16 +276,16 @@ public:
 			switch (action)
 			{
 			case 0:
-				sim.replace_cost(last_cost + s1);
+				sim.replace_cost(std::max(last_cost + s1, 0.01));
 				break;
 			case 1:
-				sim.replace_cost(last_cost + s2);
+				sim.replace_cost(std::max(last_cost + s2, 0.01));
 				break;
 			case 2:
-				sim.replace_cost(last_cost + s3);
+				sim.replace_cost(std::max(last_cost + s3, 0.01));
 				break;
 			case 3:
-				sim.replace_cost(last_cost + s4);
+				sim.replace_cost(std::max(last_cost + s4, 0.01));
 				break;
 			default:
 				break;
@@ -312,7 +323,7 @@ public:
 private:
 	const int WINDOW;
 	//const NeuralN NN;
-	Simulation& const sim;
+	Simulation sim;
 
 	//statistics 
 	double mean_store = 0;

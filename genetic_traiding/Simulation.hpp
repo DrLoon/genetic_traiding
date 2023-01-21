@@ -18,6 +18,15 @@ public:
 		replace_data.reserve(100);
 	}
 
+	// конструктор копирования
+	Simulation(const Simulation& ref_Point)
+		: dataset(ref_Point.dataset), commission_persent(ref_Point.commission_persent), timestep(ref_Point.timestep), 
+		replace(ref_Point.replace), replace_data(ref_Point.replace_data), replace_start(ref_Point.replace_start), replace_end(ref_Point.replace_end),
+		current_point(ref_Point.current_point)
+	{
+
+	}
+
 	void step() {
 		current_point++;
 	}
@@ -27,11 +36,18 @@ public:
 	}
 
 	vectorD last_n_costs(const int n) const {
+		/*std::cout << "LAST N COSTs: " << "\n";
+		std::cout << "replace: " << replace << "\n";
+		std::cout << "current_point: " << current_point << "\n";
+		std::cout << "replace_start: " << replace_start << '\n';
+		std::cout << "----------------------------------------------- " << "\n";*/
 		if (!replace) {
+			//std::cout << "1" << "\n";
 			auto end = dataset.begin() + current_point;
 			return vectorD(std::max(end - n, dataset.begin()), end);
 		}
 		if (current_point - n < replace_start && current_point >= replace_start) {
+			//std::cout << "2" << "\n";
 			vectorD copy;
 			copy.reserve(n);
 			for (int i = current_point - n; i < replace_start; ++i) {
@@ -43,14 +59,20 @@ public:
 			return copy;
 		}
 		if (current_point - n >= replace_start) {
-			int start = current_point - n - replace_start;
+			//std::cout << "3" << "\n";
+			int start = current_point - replace_start;
 			auto end = replace_data.begin() + start;
 			return vectorD(std::max(end - n, replace_data.begin()), end);
 		}
 	}
 
 	double current_cost() const {
-		if (replace && current_point >= replace_start && current_point < replace_end - 1) {
+		/*std::cout << "CURRENT COST: " << "\n";
+		std::cout << "replace: " << replace << "\n";
+		std::cout << "current_point: " << current_point << "\n";
+		std::cout << "replace_start: " << replace_start << '\n';
+		std::cout << "----------------------------------------------------" << "\n";*/
+		if (replace && current_point >= replace_start && current_point < replace_end) {
 			return replace_data[current_point - replace_start];
 		}
 		return dataset[current_point];
@@ -73,7 +95,7 @@ public:
 		if (!replace) {
 			replace = true;
 			replace_start = current_point;
-			replace_end = replace_start + 1;
+			replace_end = replace_start;
 		}
 		++replace_end;
 		replace_data.push_back(x);
