@@ -97,23 +97,27 @@ double loss(std::vector<double>& x) {
 int get_max_action(std::vector<std::tuple<int, double, int>>& res) {
 	double max_v = -99999999999;
 	int max_ind = -1;
+	std::cout << "MC res ";
 	for (int i = 0; i < res.size(); ++i) {
+		std::cout << std::get<1>(res[i]) << " ";
 		if (max_v < std::get<1>(res[i])) {
 			max_v = std::get<1>(res[i]);
 			max_ind = i;
 		}
 	}
+	std::cout << '\n';
 	return std::get<0>(res[max_ind]);
 }
 void solveMC() {
 	Simulation sim(cost_train, commission_persent, timestep);
 	TradeAgent agent(input_size, sim);
+	int iter = 0;
 	while (!agent.isDone()) {
 		MCTS mcts(100, agent);
 		auto res = mcts.run();
 		int action = get_max_action(res);
 		agent.step(action, true);
-		std::cout << "1\n";
+		std::cout << ++iter << ": \t" << action << "\n";
 	}
 	agent.print_results();
 }
