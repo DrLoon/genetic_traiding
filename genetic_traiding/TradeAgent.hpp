@@ -50,7 +50,7 @@ public:
 	void nothing() {
 		//tr_cntrs.ignor_days++;
 	}
-	bool buy(const double& cost, const int& end, const double& commission_persent) {
+	bool buy(const double cost, const int end, const double commission_persent) {
 		// TODO: add any count to buy
 		// return success or not
 
@@ -68,7 +68,7 @@ public:
 		else
 			return false;
 	}
-	bool sell(const double& cost, const int end, const double commission_persent) {
+	bool sell(const double cost, const int end, const double commission_persent) {
 		// TODO: add any count to sell
 		// return success or not
 
@@ -304,7 +304,7 @@ public:
 				mean = mean_store / month_done; 
 				variance = (variance_store - mean * mean) / month_done;
 			}
-			return { -variance, {0, 1, 2, 3} };
+			return {  + storage * 100 + amount_stocks*sim.current_cost() + money, {0, 1, 2, 3} };
 		}
 		else {
 			double mean = 0;
@@ -313,7 +313,7 @@ public:
 				mean = mean_store / month_done;
 				variance = (variance_store - mean * mean) / month_done;
 			}
-			return { -variance, {0, 1, 2} };
+			return {  + storage * 100 + amount_stocks * sim.current_cost() + money, {0, 1, 2} };
 		}
 	}
 	virtual std::shared_ptr<IEnviroment> clone() const override {

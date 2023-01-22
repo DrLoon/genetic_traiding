@@ -118,7 +118,14 @@ void solveMC() {
 		int action = get_max_action(res);
 		agent.step(action, true);
 		std::cout << ++iter << ": \t" << action << "\n";
+
+		if (iter % 365)
+			agent.print_results();
+		if (iter % 2500 == 0) {
+			agent.post_print(true);
+		}
 	}
+	agent.post_print(true);
 	agent.print_results();
 }
 
