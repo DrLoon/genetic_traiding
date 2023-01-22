@@ -109,11 +109,15 @@ int get_max_action(std::vector<std::tuple<int, double, int>>& res) {
 	return std::get<0>(res[max_ind]);
 }
 void solveMC() {
-	Simulation sim(cost_train, commission_persent, timestep);
-	TradeAgent agent(input_size, sim);
-	int iter = 0;
+	std::vector<double> availible_cost(input_size);
+	for (int i = 0; i < input_size; ++i) availible_cost.push_back(cost_train[i]);
+	Simulation sim(availible_cost, commission_persent, timestep);
+	TradeAgent agent(input_size, sim, 0, true);
+	int iter = input_size;
 	while (!agent.isDone()) {
-		MCTS mcts(100, agent);
+		if(iter < cost_train.size())
+			availible_cost.push_back(cost_train[iter]);
+		MCTS mcts(10, agent);
 		auto res = mcts.run();
 		int action = get_max_action(res);
 		agent.step(action, true);

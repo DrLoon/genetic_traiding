@@ -6,20 +6,20 @@
 #include "Simulation.hpp"
 #include "MCTS_copy.hpp"
 
-//struct TradeCounters {
-//	using vectorD = std::vector<double>;
-//	using vectorI = std::vector<int>;
-//
-//	int ignor_days = 0;
-//	int hungry_days = -1;
-//	int days_without_storage = -1;
-//	vectorI buy_days;
-//	vectorI sell_days;
-//	vectorI storage_days;
-//	vectorI storage_every_month;
-//	vectorI storage_per_month;
-//	int trade_days = 0;
-//};
+struct TradeCounters {
+	using vectorD = std::vector<double>;
+	using vectorI = std::vector<int>;
+
+	int ignor_days = 0;
+	int hungry_days = -1;
+	int days_without_storage = -1;
+	vectorI buy_days;
+	vectorI sell_days;
+	vectorI storage_days;
+	vectorI storage_every_month;
+	vectorI storage_per_month;
+	int trade_days = 0;
+};
 
 
 class TradeAgent : public IEnviroment {
@@ -31,7 +31,7 @@ public:
 		return sim.end();
 	}
 
-	TradeAgent(int _window, Simulation _sim, const int _id = 0) : WINDOW(_window), id(_id), sim(_sim)
+	TradeAgent(int _window, Simulation _sim, const int _id = 0, bool _save_cntrs = false) : WINDOW(_window), id(_id), sim(_sim), save_cntrs(_save_cntrs)
 	{
 		sim.waste_points(WINDOW);
 	}
@@ -45,10 +45,12 @@ public:
 		money(ref_Point.money), storage(ref_Point.storage), amount_stocks(ref_Point.amount_stocks)
 	{
 		//sim.waste_points(WINDOW);
+		save_cntrs = false;
 	}
 
 	void nothing() {
-		//tr_cntrs.ignor_days++;
+		if (save_cntrs)
+			tr_cntrs.ignor_days++;
 	}
 	bool buy(const double cost, const int end, const double commission_persent) {
 		// TODO: add any count to buy
@@ -61,7 +63,9 @@ public:
 			money -= cost;
 			money -= cost * commission_persent; //commission
 			amount_stocks += 1;
-			//tr_cntrs.buy_days.push_back(end);
+
+			if (save_cntrs)
+				tr_cntrs.buy_days.push_back(end);
 
 			return true;
 		}
@@ -82,20 +86,24 @@ public:
 				storage += money - active_money_limit;
 				money = active_money_limit;
 
-				//tr_cntrs.storage_days.push_back(end);
-				/*if (tr_cntrs.storage_days.size() > 1) {
-					tr_cntrs.days_without_storage = std::max(tr_cntrs.days_without_storage, tr_cntrs.storage_days.end()[-1] - tr_cntrs.storage_days.end()[-2]);
+				if (save_cntrs) {
+					tr_cntrs.storage_days.push_back(end);
+					if (tr_cntrs.storage_days.size() > 1) {
+						tr_cntrs.days_without_storage = std::max(tr_cntrs.days_without_storage, tr_cntrs.storage_days.end()[-1] - tr_cntrs.storage_days.end()[-2]);
+					}
+					else
+						tr_cntrs.days_without_storage = tr_cntrs.storage_days[0] - WINDOW;
 				}
-				else
-					tr_cntrs.days_without_storage = tr_cntrs.storage_days[0] - WINDOW;*/
 			}
 			amount_stocks -= 1;
-			//tr_cntrs.sell_days.push_back(end);
-			/*if (tr_cntrs.sell_days.size() > 1) {
-				tr_cntrs.hungry_days = std::max(tr_cntrs.hungry_days, tr_cntrs.sell_days.end()[-1] - tr_cntrs.sell_days.end()[-2]);
+			if (save_cntrs) {
+				tr_cntrs.sell_days.push_back(end);
+				if (tr_cntrs.sell_days.size() > 1) {
+					tr_cntrs.hungry_days = std::max(tr_cntrs.hungry_days, tr_cntrs.sell_days.end()[-1] - tr_cntrs.sell_days.end()[-2]);
+				}
+				else
+					tr_cntrs.hungry_days = tr_cntrs.sell_days[0] - WINDOW;
 			}
-			else
-				tr_cntrs.hungry_days = tr_cntrs.sell_days[0] - WINDOW;*/
 
 			return true;
 		}
@@ -120,12 +128,14 @@ public:
 	}
 
 	void update_month() {
-		/*if (tr_cntrs.storage_every_month.size())
-			tr_cntrs.storage_per_month.push_back(storage - tr_cntrs.storage_every_month.back());
-		else
-			tr_cntrs.storage_per_month.push_back(storage);
+		if (save_cntrs) {
+			if (tr_cntrs.storage_every_month.size())
+				tr_cntrs.storage_per_month.push_back(storage - tr_cntrs.storage_every_month.back());
+			else
+				tr_cntrs.storage_per_month.push_back(storage);
 
-		tr_cntrs.storage_every_month.push_back(storage);*/
+			tr_cntrs.storage_every_month.push_back(storage);
+		}
 
 		++month_done;
 		double diff = storage - last_storage;
@@ -159,17 +169,21 @@ public:
 		int timestep = sim.timestep;
 
 		std::cout << "\n\nDataset with amount of days " << size / timestep << " (" << size / timestep / 365 << " years)\n";
-		//std::cout << "\thangry_days " << tr_cntrs.hungry_days / timestep << "\n";
-		//std::cout << "\tdays_without_storage " << tr_cntrs.days_without_storage / timestep << "\n";
+		if (save_cntrs) {
+			std::cout << "\thangry_days " << tr_cntrs.hungry_days / timestep << "\n";
+			std::cout << "\tdays_without_storage " << tr_cntrs.days_without_storage / timestep << "\n";
+		}
 		std::cout << "\tamount_stocks " << amount_stocks << " [price " << last_cost << "] => " << last_cost * amount_stocks << "\n";
 		std::cout << "\tmoney " << money << "\n";
 		std::cout << "\tstorage " << storage << "\n";
 		std::cout << "\tsum: " << last_cost * amount_stocks + storage + money << "\n";
-		//if (month_storage) {
-			//std::cout << "\tstorage_per_month: ";
-			/*for (auto& i : tr_cntrs.storage_per_month)
-				std::cout << i << " ";*/
-		//}
+		if (save_cntrs) {
+			if (month_storage) {
+				std::cout << "\tstorage_per_month: ";
+				for (auto& i : tr_cntrs.storage_per_month)
+					std::cout << i << " ";
+				}
+		}
 		std::cout << "\n\n";
 		//*(cost_test.end() - 1)
 	}
@@ -297,6 +311,7 @@ public:
 		return 0;
 	}
 	virtual std::pair<double, std::vector<int>> evaluate(const int action, const bool isGreen) const override {
+		double eval = storage * 100 + amount_stocks * sim.current_cost() + money;
 		if (isGreen) {
 			double mean = 0;
 			double variance = 0;
@@ -304,7 +319,7 @@ public:
 				mean = mean_store / month_done; 
 				variance = (variance_store - mean * mean) / month_done;
 			}
-			return {  + storage * 100 + amount_stocks*sim.current_cost() + money, {0, 1, 2, 3} };
+			return {  +eval, {0, 1, 2, 3} };
 		}
 		else {
 			double mean = 0;
@@ -313,7 +328,7 @@ public:
 				mean = mean_store / month_done;
 				variance = (variance_store - mean * mean) / month_done;
 			}
-			return {  + storage * 100 + amount_stocks * sim.current_cost() + money, {0, 1, 2} };
+			return {  +eval, {0, 1, 2} };
 		}
 	}
 	virtual std::shared_ptr<IEnviroment> clone() const override {
@@ -332,9 +347,10 @@ private:
 	int month_done = 0;
 	double last_cost = -1;
 
-	//TradeCounters tr_cntrs;
+	TradeCounters tr_cntrs;
+	bool save_cntrs;
 
-	double money = 10000;
+	double money = 500;
 	const double active_money_limit = money;
 	double storage = 0;
 
