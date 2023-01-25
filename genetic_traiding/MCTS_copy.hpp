@@ -58,7 +58,7 @@ public:
 
 
 private:
-	const double C = 0;
+	const double C = 0.5;
 };
 
 

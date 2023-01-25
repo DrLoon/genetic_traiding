@@ -8,8 +8,6 @@
 #include<float.h>
 #define NOMINMAX
 #include<Windows.h>
-#include"LGenetic.hpp"
-#include"NeuralN.hpp"
 #include"TradeAgent.hpp"
 #include"Simulation.hpp"
 #include"DataReader.hpp"
@@ -18,15 +16,6 @@
 
 const int timestep = 1; // here 9 (every hour) or 1 (every day)
 
-bool show = false;
-const int input_size = 7 * timestep;
-const int output_size = 3;
-const NeuralN MyNet_static = NeuralN(
-	{ input_size, 25, 15, 5, output_size }, 
-	{ NeuralN::RELU, NeuralN::RELU, NeuralN::RELU, NeuralN::SIGMOID }
-);
-
-
 const double commission_persent = 0.0004;
 const double train_persent = 1;
 
@@ -34,64 +23,7 @@ std::vector<double> cost_train;
 std::vector<double> cost_test;
 
 
-const NeuralN new_NN_by_vec(const std::vector<double>& x) {
-	NeuralN MyNet = MyNet_static;
-	MyNet.read_weitghs(x);
-	return MyNet;
-}
 
-
-double loss(std::vector<double>& x) {
-	const NeuralN MyNet = new_NN_by_vec(x);
-	Simulation sim(cost_test, commission_persent, timestep);
-
-	TradeAgent agent(input_size, sim);
-
-	agent.do_actions_sim();
-
-	agent.print_results();
-	if (show)
-		agent.post_print(true);
-
-	return agent.get_money();
-}
-//double trade_action(const std::vector<double>& x) {
-//	const NeuralN MyNet = new_NN_by_vec(x);
-//	Simulation sim(cost_train, commission_persent, timestep);
-//
-//	TradeAgent agent(input_size, MyNet, sim);
-//
-//	agent.do_actions_sim();
-//
-//	if (show) {
-//		agent.post_print(true);
-//		//agent.print_results(sim.current_cost());
-//	}
-//
-//	return agent.fitness();
-//}
-
-
-//void training(int times) {
-//	LGenetic model(128, MyNet_static.paramsNumber(), trade_action);
-//	model.rand_population_uniform();
-//	model.set_crossover(LGenetic::SPBX);
-//	model.set_mutation(LGenetic::AM);
-//	model.enable_multiprocessing(10);
-//	//model.enable_avarage_fitness(10);
-//	model.set_loss(loss);
-//	model.learn(times);
-//#ifdef PYPLT
-//	model.show_plt_avarage();
-//#endif
-//
-//	auto best = model.best_gene();
-//
-//	show = true;
-//	trade_action(best);
-//	loss(best);
-//	show = false;
-//}
 
 
 int get_max_action(std::vector<std::tuple<int, double, int>>& res) {
@@ -99,7 +31,7 @@ int get_max_action(std::vector<std::tuple<int, double, int>>& res) {
 	int max_ind = -1;
 	std::cout << "MC res ";
 	for (int i = 0; i < res.size(); ++i) {
-		std::cout << std::get<1>(res[i]) << " ";
+		std::cout << std::get<1>(res[i]) << " | " << std::get<2>(res[i]) << "    ";
 		if (max_v < std::get<1>(res[i])) {
 			max_v = std::get<1>(res[i]);
 			max_ind = i;
@@ -109,26 +41,22 @@ int get_max_action(std::vector<std::tuple<int, double, int>>& res) {
 	return std::get<0>(res[max_ind]);
 }
 void solveMC() {
-	std::vector<double> availible_cost;
-	for (int i = 0; i < input_size + 1; ++i) availible_cost.push_back(cost_train[i]);
-	Simulation sim(availible_cost, commission_persent, timestep);
-	TradeAgent agent(input_size, sim, 0, true);
-	int iter = input_size + 1;
-	while (!agent.isDone() || iter == input_size + 1) {
-		if (iter < cost_train.size())
-			availible_cost.push_back(cost_train[iter]);
-		else break;
+	std::vector<double> start_window;
+	int WINDOW_SIZE = 7 * timestep;
+	for (int i = 0; i < WINDOW_SIZE; ++i) start_window.push_back(cost_train[i]);
+	Simulation sim(commission_persent);
+	sim.set_window(start_window);
+	TradeAgent agent(sim, timestep, true);
+
+	for (int t = WINDOW_SIZE; t < cost_train.size(); ++t) {
+		agent.update_cost(cost_train[t]);
 		MCTS mcts(1000, agent);
 		auto res = mcts.run();
 		int action = get_max_action(res);
 		agent.step(action, true);
-		std::cout << ++iter << ": \t" << action << "\n";
+		std::cout << t << ": \t" << action << "\n";
 
-		if (iter % 365)
-			agent.print_results();
-		if (iter % 2500 == 0) {
-			agent.post_print(true);
-		}
+		agent.print_results();
 	}
 	agent.post_print(true);
 	agent.print_results();

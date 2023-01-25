@@ -26,25 +26,17 @@ class TradeAgent : public IEnviroment {
 	using vectorD = std::vector<double>;
 	using vectorI = std::vector<int>;
 public:
-	const int id = 0;
-	bool isDone() {
-		return sim.end();
-	}
 
-	TradeAgent(int _window, Simulation _sim, const int _id = 0, bool _save_cntrs = false) : WINDOW(_window), id(_id), sim(_sim), save_cntrs(_save_cntrs)
-	{
-		sim.waste_points(WINDOW);
-	}
-
-
+	TradeAgent(Simulation _sim, const int _discretization, bool _save_cntrs = false) 
+		: sim(_sim), save_cntrs(_save_cntrs), discretization(_discretization)
+	{}
 	// конструктор копирования
 	TradeAgent(const TradeAgent& ref_Point) 
-		: WINDOW(ref_Point.WINDOW), id(ref_Point.id), sim(ref_Point.sim), 
+		: sim(ref_Point.sim), 
 		mean_store(ref_Point.mean_store), variance_store(ref_Point.variance_store),
 		last_storage(ref_Point.last_storage), month_done(ref_Point.month_done), last_cost(ref_Point.last_cost),
-		money(ref_Point.money), storage(ref_Point.storage), amount_stocks(ref_Point.amount_stocks)
+		money(ref_Point.money), storage(ref_Point.storage), amount_stocks(ref_Point.amount_stocks), discretization(ref_Point.discretization)
 	{
-		//sim.waste_points(WINDOW);
 		save_cntrs = false;
 	}
 
@@ -92,7 +84,7 @@ public:
 						tr_cntrs.days_without_storage = std::max(tr_cntrs.days_without_storage, tr_cntrs.storage_days.end()[-1] - tr_cntrs.storage_days.end()[-2]);
 					}
 					else
-						tr_cntrs.days_without_storage = tr_cntrs.storage_days[0] - WINDOW;
+						tr_cntrs.days_without_storage = tr_cntrs.storage_days[0] - 7 * discretization;
 				}
 			}
 			amount_stocks -= 1;
@@ -102,7 +94,7 @@ public:
 					tr_cntrs.hungry_days = std::max(tr_cntrs.hungry_days, tr_cntrs.sell_days.end()[-1] - tr_cntrs.sell_days.end()[-2]);
 				}
 				else
-					tr_cntrs.hungry_days = tr_cntrs.sell_days[0] - WINDOW;
+					tr_cntrs.hungry_days = tr_cntrs.sell_days[0] - 7 * discretization;
 			}
 
 			return true;
@@ -111,21 +103,6 @@ public:
 			return false;
 	}
 
-
-	double get_money() const {
-		return money;
-	}
-	double get_storage() const {
-		return storage;
-	}
-
-	int get_action(vectorD& input) const {
-		/*normolize(input);
-		auto a = NN.forward(input);
-		return ans_to_action(a);*/
-		throw;
-		return 0;
-	}
 
 	void update_month() {
 		if (save_cntrs) {
@@ -165,13 +142,12 @@ public:
 	}
 	void post_print(bool month_storage) const {
 		double last_cost = sim.current_cost();
-		int size = sim.dataset_size();
-		int timestep = sim.timestep;
+		double size = sim.get_current_point();
 
-		std::cout << "\n\nDataset with amount of days " << size / timestep << " (" << size / timestep / 365 << " years)\n";
+		std::cout << "\n\nDataset with amount of days " << size / discretization << " (" << size / discretization / 365 << " years)\n";
 		if (save_cntrs) {
-			std::cout << "\thangry_days " << tr_cntrs.hungry_days / timestep << "\n";
-			std::cout << "\tdays_without_storage " << tr_cntrs.days_without_storage / timestep << "\n";
+			std::cout << "\thangry_days " << tr_cntrs.hungry_days / discretization << "\n";
+			std::cout << "\tdays_without_storage " << tr_cntrs.days_without_storage / discretization << "\n";
 		}
 		std::cout << "\tamount_stocks " << amount_stocks << " [price " << last_cost << "] => " << last_cost * amount_stocks << "\n";
 		std::cout << "\tmoney " << money << "\n";
@@ -187,76 +163,14 @@ public:
 		std::cout << "\n\n";
 		//*(cost_test.end() - 1)
 	}
-
-	double fitness() const {
-		//vectorI a = tr_cntrs.storage_per_month;
-		//////const double uni = uniformity(a) * 100000000;
-		//const double uni = uniformity2(a) * 10000000;
-		////return -storage * 10  + uniformity3(a);
-		//return -storage * 10 - money + (double)tr_cntrs.hungry_days * 100 + (double)amount_stocks * 10 + uni;
-		//double mean = 0;
-		//for (auto& i : tr_cntrs.storage_per_month)
-		//	mean += i;
-		//mean /= tr_cntrs.storage_per_month.size();
-		//return -mean;
-		throw;
-		return 0;
-	}
 	
-	void do_actions_sim() {
-		sim.waste_points(WINDOW);
-		while (!sim.end()) {
-			auto sample = sim.last_n_costs(WINDOW);
-
-			switch (get_action(sample))
-			{
-			case 0:
-				nothing();
-				break;
-			case 1:
-				buy(sim.current_cost(), sim.get_current_point(), sim.commission_persent);
-				break;
-			case 2:
-				sell(sim.current_cost(), sim.get_current_point(), sim.commission_persent);
-				break;
-			default:
-				throw "bad action";
-				break;
-			}
-
-			if (sim.get_current_point() % (30 * sim.timestep) == 0)
-				update_month();
-
-			sim.step();
-			//tr_cntrs.trade_days++;
-		}
+	void update_cost(const double _new_cost) {
+		sim.step(_new_cost);
 	}
 
-	std::pair<double, double> calculate_stats_distribution() {
-		auto sample = sim.last_n_costs(WINDOW);
-		//statistics 
-		double mean = 0;
-		double variance = 0;
-		int n = sample.size();
-		if (n < 2) throw;
-		for (int i = 1; i < n; ++i)
-		{
-			double diff = sample[i] - sample[i - 1];
-			mean += diff;
-		}
-		mean /= n;
-		for (int i = 1; i < n; ++i)
-		{
-			double diff = sample[i] - sample[i - 1];
-			variance += (diff - mean) * (diff - mean);
-		}
-		variance /= n - 1;
-		return std::make_pair(mean, variance);
-	}
 
 
 	virtual void step(const int action, const bool isGreen) override {
-		if (sim.end()) return;
 		if (isGreen) {
 			last_cost = sim.current_cost();
 			switch (action)
@@ -275,32 +189,30 @@ public:
 				break;
 			}
 
-			if (sim.get_current_point() % (30 * sim.timestep) == 0)
+			if (sim.get_current_point() % (30 * discretization) == 0)
 				update_month();
-
-			sim.step();
 		}
 		else {
-			int n = 4;
-			auto [mean, var] = calculate_stats_distribution();
+			auto [mean, var] = sim.calculate_stats_distribution();
 			var = sqrt(var);
 			double s1 = mean - 1.5 * var;
-			double s2 = mean - 4 * var;
+			double s2 = mean - 3 * var;
 			double s3 = mean + 1.5 * var;
-			double s4 = mean + 4 * var;
+			double s4 = mean + 3 * var;
+	
 			switch (action)
 			{
 			case 0:
-				sim.replace_cost(std::max(last_cost + s1, 0.01));
+				sim.step(std::max(last_cost + s1, 0.001));
 				break;
 			case 1:
-				sim.replace_cost(std::max(last_cost + s2, 0.01));
+				sim.step(std::max(last_cost + s2, 0.001));
 				break;
 			case 2:
-				sim.replace_cost(std::max(last_cost + s3, 0.01));
+				sim.step(std::max(last_cost + s3, 0.001));
 				break;
 			case 3:
-				sim.replace_cost(std::max(last_cost + s4, 0.01));
+				sim.step(std::max(last_cost + s4, 0.001));
 				break;
 			default:
 				break;
@@ -320,12 +232,12 @@ public:
 			variance = (variance_store - mean * mean) / month_done;
 		}
 
-		if (!sim.end()) eval = std::log(abs(mean * 10000 + amount_stocks * sim.current_cost() + money) + 1);
+		eval = mean * 1000 + storage * 10 + amount_stocks * sim.current_cost() + money;
 		if (isGreen) {
-			return {  +eval, {0, 1, 2, 3} };
+			return {  eval, {0, 1, 2, 3} };
 		}
 		else {
-			return {  +eval, {0, 1, 2} };
+			return {  eval, {0, 1, 2} };
 		}
 	}
 	virtual std::shared_ptr<IEnviroment> clone() const override {
@@ -333,8 +245,6 @@ public:
 	}
 
 private:
-	const int WINDOW;
-	//const NeuralN NN;
 	Simulation sim;
 
 	//statistics 
@@ -353,93 +263,5 @@ private:
 
 	int amount_stocks = 0;
 
-	void normolize(vectorD& x) const {
-		double Min = DBL_MAX;
-		double Max = -DBL_MAX;
-		for (auto& i : x) {
-			Min = std::min(Min, i);
-			Max = std::max(Max, i);
-		}
-		/*Min = 0;
-		Max = 300;*/
-		double diff = Max - Min;
-		for (auto& i : x) {
-			i = (i - Min) / diff;
-		}
-	}
-	vectorD normolize(const vectorI& x) const {
-		int Min = INT_MAX;
-		int Max = -INT_MAX;
-		for (auto& i : x) {
-			Min = std::min(Min, i);
-			Max = std::max(Max, i);
-		}
-		/*Min = 0;
-		Max = 300;*/
-		int diff = Max - Min;
-		if (diff == 0)
-			return vectorD(x.size(), std::min(x[0], 1));
-		vectorD res(x.size());
-		for (int i = 0; i < x.size(); ++i) {
-			res[i] = static_cast<double>(x[i] - Min) / diff;
-		}
-		return res;
-	}
-	int ans_to_action(const vectorD& ans) const {
-		int action = 0;
-		for (int j = 0; j < ans.size(); ++j)
-			if (ans[j] > ans[action]) action = j;
-		return action;
-	}
-	
-	double uniformity(const vectorI x) const {
-		const vectorD norm = normolize(x);
-		double Min = DBL_MAX;
-		double Max = -DBL_MAX;
-		for (auto& i : norm) {
-			Min = std::min(Min, i);
-			Max = std::max(Max, i);
-		}
-
-		int not_null = 0;
-		for (auto& i : x)
-			if (i != 0)
-				++not_null;
-		return static_cast<double>(Max - Min + 1) / (not_null*10 + 1);
-	}
-	double uniformity2(const vectorI x) const {
-		const vectorD norm = normolize(x);
-		double mean = 0;
-		for (auto& i : norm) {
-			mean += i;
-		}
-		mean /= norm.size();
-		double s_diff = 0;
-		for (auto& i : norm) {
-			s_diff += abs(i - mean);
-		}
-
-		int not_null = 0;
-		for (auto& i : x)
-			if (i != 0)
-				++not_null;
-		return static_cast<double>(s_diff + 1) / (not_null * 10 + 1);
-	}
-	double uniformity3(const vectorI x) const {
-		const vectorD norm = normolize(x);
-		double mean = 0;
-		int not_null = 0;
-		for (auto& i : norm) {
-			mean += i;
-			if (i) ++not_null;
-		}
-		if (mean == 0) return norm.size();
-		mean /= not_null;
-
-		double s_diff = 0;
-		for (auto& i : norm) {
-			s_diff += i ? abs(i - mean) : mean;
-		}
-		return s_diff;
-	}
+	int discretization = 1;
 };
