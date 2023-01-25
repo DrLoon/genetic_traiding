@@ -28,7 +28,7 @@ const NeuralN MyNet_static = NeuralN(
 
 
 const double commission_persent = 0.0004;
-const double train_persent = 0.7;
+const double train_persent = 1;
 
 std::vector<double> cost_train;
 std::vector<double> cost_test;
@@ -109,15 +109,16 @@ int get_max_action(std::vector<std::tuple<int, double, int>>& res) {
 	return std::get<0>(res[max_ind]);
 }
 void solveMC() {
-	std::vector<double> availible_cost(input_size);
-	for (int i = 0; i < input_size; ++i) availible_cost.push_back(cost_train[i]);
+	std::vector<double> availible_cost;
+	for (int i = 0; i < input_size + 1; ++i) availible_cost.push_back(cost_train[i]);
 	Simulation sim(availible_cost, commission_persent, timestep);
 	TradeAgent agent(input_size, sim, 0, true);
-	int iter = input_size;
-	while (!agent.isDone()) {
-		if(iter < cost_train.size())
+	int iter = input_size + 1;
+	while (!agent.isDone() || iter == input_size + 1) {
+		if (iter < cost_train.size())
 			availible_cost.push_back(cost_train[iter]);
-		MCTS mcts(10, agent);
+		else break;
+		MCTS mcts(1000, agent);
 		auto res = mcts.run();
 		int action = get_max_action(res);
 		agent.step(action, true);

@@ -27,8 +27,9 @@ public:
 
 	}
 
-	void step() {
+	bool step() {
 		current_point++;
+		return end() ? false : true;
 	}
 
 	int dataset_size() const {
@@ -83,7 +84,7 @@ public:
 	}
 
 	bool end() const {
-		return current_point == (dataset.size() - 1);
+		return current_point >= (dataset.size());
 	}
 
 	void waste_points(const int n) {

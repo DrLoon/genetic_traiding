@@ -256,6 +256,7 @@ public:
 
 
 	virtual void step(const int action, const bool isGreen) override {
+		if (sim.end()) return;
 		if (isGreen) {
 			last_cost = sim.current_cost();
 			switch (action)
@@ -284,9 +285,9 @@ public:
 			auto [mean, var] = calculate_stats_distribution();
 			var = sqrt(var);
 			double s1 = mean - 1.5 * var;
-			double s2 = mean - 3 * var;
+			double s2 = mean - 4 * var;
 			double s3 = mean + 1.5 * var;
-			double s4 = mean + 3 * var;
+			double s4 = mean + 4 * var;
 			switch (action)
 			{
 			case 0:
@@ -311,23 +312,19 @@ public:
 		return 0;
 	}
 	virtual std::pair<double, std::vector<int>> evaluate(const int action, const bool isGreen) const override {
-		double eval = storage * 100 + amount_stocks * sim.current_cost() + money;
+		double eval = 0; 
+		double mean = 0;
+		double variance = 0;
+		if (month_done) {
+			mean = mean_store / month_done;
+			variance = (variance_store - mean * mean) / month_done;
+		}
+
+		if (!sim.end()) eval = std::log(abs(mean * 10000 + amount_stocks * sim.current_cost() + money) + 1);
 		if (isGreen) {
-			double mean = 0;
-			double variance = 0;
-			if (month_done) { 
-				mean = mean_store / month_done; 
-				variance = (variance_store - mean * mean) / month_done;
-			}
 			return {  +eval, {0, 1, 2, 3} };
 		}
 		else {
-			double mean = 0;
-			double variance = 0;
-			if (month_done) {
-				mean = mean_store / month_done;
-				variance = (variance_store - mean * mean) / month_done;
-			}
 			return {  +eval, {0, 1, 2} };
 		}
 	}
