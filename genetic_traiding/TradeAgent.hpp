@@ -195,10 +195,14 @@ public:
 		else {
 			auto [mean, var] = sim.calculate_stats_distribution();
 			var = sqrt(var);
-			double s1 = mean - 1.5 * var;
-			double s2 = mean - 3 * var;
-			double s3 = mean + 1.5 * var;
-			double s4 = mean + 3 * var;
+
+			
+			sim.step(std::max(last_cost + mean + ((rand() % 6000) / 1000 - 3), 0.001));
+			
+			/*double s1 = mean - 1 * var;
+			double s2 = mean - 2.5 * var;
+			double s3 = mean + 1 * var;
+			double s4 = mean + 2.5 * var;
 	
 			switch (action)
 			{
@@ -216,7 +220,7 @@ public:
 				break;
 			default:
 				break;
-			}
+			}*/
 		}
 	}
 	virtual int actions_number() const override {
@@ -232,12 +236,15 @@ public:
 			variance = (variance_store - mean * mean) / month_done;
 		}
 
-		eval = mean * 1000 + storage * 10 + amount_stocks * sim.current_cost() + money;
+		eval = mean / (variance + 1);
 		if (isGreen) {
-			return {  eval, {0, 1, 2, 3} };
+			int n = 4;
+			std::vector<int> nums;
+			for (int i = 0; i < n; ++i) nums.push_back(i);
+			return {  eval, nums };
 		}
 		else {
-			return {  eval, {0, 1, 2} };
+			return { eval, {0, 1, 2} };
 		}
 	}
 	virtual std::shared_ptr<IEnviroment> clone() const override {

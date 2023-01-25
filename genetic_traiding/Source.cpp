@@ -30,19 +30,23 @@ int get_max_action(std::vector<std::tuple<int, double, int>>& res) {
 	double max_v = -99999999999;
 	int max_ind = -1;
 	std::cout << "MC res ";
+	double copm = std::get<1>(res[0]);
+	bool rand_action = true;
 	for (int i = 0; i < res.size(); ++i) {
 		std::cout << std::get<1>(res[i]) << " | " << std::get<2>(res[i]) << "    ";
+		if (abs(copm - std::get<1>(res[i])) > 10e-3) rand_action = false;
 		if (max_v < std::get<1>(res[i])) {
 			max_v = std::get<1>(res[i]);
 			max_ind = i;
 		}
 	}
 	std::cout << '\n';
+	if (rand_action) return rand() % 3;
 	return std::get<0>(res[max_ind]);
 }
 void solveMC() {
 	std::vector<double> start_window;
-	int WINDOW_SIZE = 7 * timestep;
+	int WINDOW_SIZE = 100;
 	for (int i = 0; i < WINDOW_SIZE; ++i) start_window.push_back(cost_train[i]);
 	Simulation sim(commission_persent);
 	sim.set_window(start_window);
